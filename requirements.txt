@@ -1,0 +1,12 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.32,<1
+sqlalchemy>=2.0,<3
+aiomysql>=0.2,<1
+cryptography>=44,<46
+redis>=5,<6
+httpx>=0.28,<1
+celery>=5.4,<6
+APScheduler>=3.10,<4
+web3>=7,<8
+py-solc-x>=2.0,<3
+alembic>=1.14,<2

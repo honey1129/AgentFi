@@ -1,0 +1,25 @@
+{
+	email {$CADDY_EMAIL}
+	auto_https on
+}
+
+{$APP_DOMAIN} {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+
+	@api path /v1/* /docs* /openapi.json /assets/* /dashboard-assets/*
+	handle @api {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy api:8000
+	}
+}

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgentFi Runtime Workspace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="/dashboard-assets/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <!-- TOPBAR -->
+      <div class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-mark">AF</div>
+          <div>
+            <p class="topbar-label">Single-Host Runtime</p>
+            <strong>AgentFi Runtime Workspace</strong>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <nav class="topbar-nav" aria-label="Console sections">
+            <a href="/launchpad" data-nav-route="launchpad">Launchpad</a>
+            <a href="/wallets" data-nav-route="wallets">Wallets</a>
+            <a href="/agents" data-nav-route="agents">Agents</a>
+            <a href="/market" data-nav-route="market">Market</a>
+            <a href="/runs" data-nav-route="runs">Runs</a>
+          </nav>
+          <div id="topbar-note" class="topbar-note">MetaMask auth · async queue · NFT-backed ownership</div>
+        </div>
+      </div>
+
+      <!-- HERO -->
+      <header class="hero">
+        <div class="hero-copy">
+          <p id="page-eyebrow" class="eyebrow">Agent Ownership Runtime</p>
+          <h1 id="page-title">Agent Ownership Workspace</h1>
+          <p id="page-lede" class="lede">
+            一个把 agent、NFT 所有权、交易、调度和链上同步放进同一块控制台的单机托管面板。
+          </p>
+          <div class="hero-ribbon">
+            <article class="ribbon-card">
+              <span>Ownership Layer</span>
+              <strong>NFT 定义 agent 控制权</strong>
+              <p>交易、转移、链上同步都会直接影响谁能调度 agent。</p>
+            </article>
+            <article class="ribbon-card">
+              <span>Execution Layer</span>
+              <strong>Run 入队后再二次校验 owner</strong>
+              <p>队列和 worker 执行前都绑定当前 NFT owner，避免转手后仍被调用。</p>
+            </article>
+            <article class="ribbon-card">
+              <span>Market Layer</span>
+              <strong>本地撮合和链上转移统一入口</strong>
+              <p>本地 listing、MetaMask transfer、listener 同步都在同一套 runtime 里闭环。</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="hero-badge">
+          <div class="status-head">
+            <span class="badge-label">Runtime / Wallet</span>
+            <span class="status-orb"></span>
+          </div>
+          <div class="hero-pill-row">
+            <strong id="health-pill" class="pill pending">Checking</strong>
+            <strong id="wallet-pill" class="pill pending">MetaMask Pending</strong>
+          </div>
+          <div class="wallet-summary">
+            <p id="wallet-address">Address: Not connected</p>
+            <p id="wallet-runtime-id">Runtime Wallet: Not synced</p>
+            <p id="wallet-session">Session: Not authenticated</p>
+            <p id="runtime-chain">Chain Sync: Unknown</p>
+            <p id="runtime-mint">Mint: Unknown</p>
+          </div>
+          <div class="hero-footnote">
+            当前控制台每 12 秒自动同步一次，同时支持手动 refresh。前端操作仍以当前签名 MetaMask 地址为准。
+          </div>
+          <p id="last-refresh">Waiting for first sync</p>
+        </div>
+      </header>
+
+      <section class="mission-band">
+        <div class="mission-intro">
+          <div>
+            <p id="mission-kicker" class="section-kicker">Signal Grid</p>
+            <h2 id="mission-title">把当前 operator、链上状态、市场流动性和执行队列压成一眼能扫完的面板。</h2>
+          </div>
+          <p id="mission-summary">
+            Connect MetaMask、签名登录、创建 agent 后，这里会自动回放谁拥有控制权、链上是否 ready，以及交易面是否活跃。
+          </p>
+        </div>
+        <div class="signal-grid">
+          <article id="signal-auth-card" class="signal-card tone-pending">
+            <span>Operator</span>
+            <strong id="signal-auth-title">No Session</strong>
+            <small id="signal-auth-detail">Connect MetaMask to unlock owner-scoped actions.</small>
+          </article>
+          <article id="signal-chain-card" class="signal-card tone-pending">
+            <span>Chain Sync</span>
+            <strong id="signal-chain-title">Unknown</strong>
+            <small id="signal-chain-detail">Waiting for runtime config.</small>
+          </article>
+          <article id="signal-market-card" class="signal-card tone-muted">
+            <span>Marketplace</span>
+            <strong id="signal-market-title">No Listings</strong>
+            <small id="signal-market-detail">Open a listing to activate the trading board.</small>
+          </article>
+          <article id="signal-queue-card" class="signal-card tone-muted">
+            <span>Execution</span>
+            <strong id="signal-queue-title">Idle Queue</strong>
+            <small id="signal-queue-detail">Queue a task or schedule a run.</small>
+          </article>
+        </div>
+      </section>
+
+      <!-- STATS -->
+      <section class="stats" id="stats-grid">
+        <article class="stat-card">
+          <span>Wallets</span>
+          <strong id="stat-wallets">0</strong>
+          <small>Runtime 内部 wallet registry</small>
+        </article>
+        <article class="stat-card">
+          <span>Agents</span>
+          <strong id="stat-agents">0</strong>
+          <small>可被 NFT 持有人调度的 agent</small>
+        </article>
+        <article class="stat-card">
+          <span>Open Listings</span>
+          <strong id="stat-listings">0</strong>
+          <small>仍处于公开出售状态的 ownership NFT</small>
+        </article>
+        <article class="stat-card">
+          <span>Queued Runs</span>
+          <strong id="stat-queued">0</strong>
+          <small>等待 Celery worker 执行的任务</small>
+        </article>
+      </section>
+
+      <!-- WORKSPACE -->
+      <section class="workspace">
+        <div class="workspace-lead">
+          <div>
+            <p id="workspace-kicker" class="section-kicker">Operate</p>
+            <h2 id="workspace-title">用一块控制台完成创建、调度、交易和链上同步。</h2>
+          </div>
+          <div class="workspace-side">
+            <p id="workspace-description">
+              左侧是 launchpad，右侧是 owner-scoped 操作。下面的 registry 视图负责回放整个 runtime 的事实状态。
+            </p>
+            <div class="workspace-context">
+              <article class="context-pill">
+                <span>Current Operator</span>
+                <strong id="workspace-operator">Unsigned</strong>
+              </article>
+              <article class="context-pill">
+                <span>Mint Path</span>
+                <strong id="workspace-mint-state">Unknown</strong>
+              </article>
+              <article class="context-pill">
+                <span>Market Focus</span>
+                <strong id="workspace-market-state">No Listing</strong>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-group" data-page-section="launchpad">
+          <article id="launchpad-panel" class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Bootstrap</p>
+                <h2>Launchpad</h2>
+              </div>
+              <div class="panel-side">
+                <span class="panel-counter">2 bootstrap flows</span>
+                <button class="ghost" id="refresh-button" type="button">Refresh</button>
+              </div>
+            </div>
+            <div class="form-grid">
+              <form id="wallet-connect-form" class="stacked-form accent-teal">
+                <h3>MetaMask Sign-In</h3>
+                <p class="subcopy">
+                  连接浏览器里的 MetaMask，并通过签名把当前地址登录成 runtime wallet。<code>initial_balance</code> 只在第一次同步时作为本地撮合余额。
+                </p>
+                <label>
+                  Wallet Label
+                  <input name="label" placeholder="main_operator" />
+                </label>
+                <label>
+                  Bootstrap Balance
+                  <input name="initial_balance" type="number" min="0" step="0.01" value="1000" required />
+                </label>
+                <label>
+                  Connected Address
+                  <input name="chain_address" placeholder="0x..." readonly />
+                </label>
+                <div class="inline-actions">
+                  <button class="ghost" id="metamask-connect-button" type="button">Connect MetaMask</button>
+                  <button type="submit">Sign In &amp; Sync</button>
+                  <button class="ghost" id="metamask-logout-button" type="button">Logout</button>
+                </div>
+              </form>
+
+              <form id="agent-form" class="stacked-form accent-amber">
+                <h3>Create Agent + NFT</h3>
+                <p class="subcopy">
+                  如果 runtime 已配置合约、RPC 和 minter key，这里会在创建 agent 时自动链上 mint 一个 <code>AgentOwnershipNFT</code>。
+                </p>
+                <label>
+                  Name
+                  <input name="name" placeholder="Research Agent" required />
+                </label>
+                <p class="subcopy">Owner Wallet: 当前已签名的 MetaMask runtime wallet</p>
+                <label>
+                  Description
+                  <textarea name="description" rows="2" placeholder="Tracks alpha and drafts operator notes" required></textarea>
+                </label>
+                <label>
+                  System Prompt
+                  <textarea name="system_prompt" rows="4" placeholder="Act like a disciplined crypto operator..." required></textarea>
+                </label>
+                <label>
+                  NFT Contract
+                  <input name="contract_address" placeholder="0x..." />
+                </label>
+                <label>
+                  Chain Token ID
+                  <input name="chain_token_id" placeholder="42" />
+                </label>
+                <button type="submit">Spawn Agent</button>
+              </form>
+            </div>
+          </article>
+        </div>
+
+        <div class="panel-group" data-page-section="runs">
+          <article id="execution-actions-panel" class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Execution</p>
+                <h2>Run Actions</h2>
+              </div>
+              <div class="panel-side">
+                <span class="panel-counter">2 execution flows</span>
+                <p>调度 run 和定时任务都放在这一页。</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <form id="run-form" class="stacked-form compact accent-cyan">
+                <h3>Queue Run</h3>
+                <label>
+                  Agent
+                  <select name="agent_id" required></select>
+                </label>
+                <p class="subcopy">Caller Wallet: 当前已签名的 MetaMask wallet</p>
+                <label>
+                  Task
+                  <textarea name="task" rows="3" placeholder="Research a new NFT collection." required></textarea>
+                </label>
+                <button type="submit">Queue Run</button>
+              </form>
+
+              <form id="schedule-form" class="stacked-form compact accent-cyan">
+                <h3>Schedule Agent</h3>
+                <label>
+                  Agent
+                  <select name="agent_id" required></select>
+                </label>
+                <label>
+                  Task Template
+                  <textarea name="task" rows="3" placeholder="Write one market update." required></textarea>
+                </label>
+                <label>
+                  Interval Seconds
+                  <input name="interval_seconds" type="number" min="1" step="1" value="300" required />
+                </label>
+                <label>
+                  Starts In Seconds
+                  <input name="starts_in_seconds" type="number" min="0" step="1" value="30" required />
+                </label>
+                <button type="submit">Schedule</button>
+              </form>
+            </div>
+          </article>
+        </div>
+
+        <div class="panel-group" data-page-section="market">
+          <article id="market-actions-panel" class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Market</p>
+                <h2>Market Actions</h2>
+              </div>
+              <div class="panel-side">
+                <span class="panel-counter">3 trade flows</span>
+                <p>挂牌、购买和转移都拆到独立 market 页面。</p>
+              </div>
+            </div>
+            <div class="form-grid">
+              <form id="listing-form" class="stacked-form compact accent-coral">
+                <h3>Open Listing</h3>
+                <label>
+                  NFT
+                  <select name="token_id" required></select>
+                </label>
+                <p class="subcopy">Seller Wallet: 当前已签名的 MetaMask wallet</p>
+                <label>
+                  Price
+                  <input name="price" type="number" min="0.01" step="0.01" value="250" required />
+                </label>
+                <button type="submit">List NFT</button>
+              </form>
+
+              <form id="buy-form" class="stacked-form compact accent-teal">
+                <h3>Buy Listing</h3>
+                <label>
+                  Listing
+                  <select name="listing_id" required></select>
+                </label>
+                <p class="subcopy">Buyer Wallet: 当前已签名的 MetaMask wallet</p>
+                <button type="submit">Buy Agent</button>
+              </form>
+
+              <form id="transfer-form" class="stacked-form compact accent-amber">
+                <h3>Transfer NFT</h3>
+                <p class="subcopy">
+                  有链上映射时会调用 MetaMask 发起 ERC-721 转移；否则回退到本地 runtime transfer。
+                </p>
+                <label>
+                  NFT
+                  <select name="token_id" required></select>
+                </label>
+                <label>
+                  To Chain Address
+                  <input name="to_chain_address" placeholder="0x..." required />
+                </label>
+                <button type="submit">Transfer</button>
+              </form>
+            </div>
+          </article>
+        </div>
+
+        <div id="flash" class="flash hidden" role="status"></div>
+
+        <!-- REGISTRY PANELS -->
+        <div class="panel-group wide">
+          <article id="wallets-panel" class="panel" data-page-section="wallets">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Registry</p>
+                <h2>Wallet Registry</h2>
+              </div>
+              <div class="panel-side">
+                <span id="wallets-panel-count" class="panel-counter">0 wallets</span>
+                <p>本地钱包余额和链上映射。</p>
+              </div>
+            </div>
+            <div id="wallets-grid" class="card-grid empty-state">Loading wallets...</div>
+          </article>
+
+          <article id="agents-panel" class="panel" data-page-section="agents">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Ownership</p>
+                <h2>Agents &amp; Ownership</h2>
+              </div>
+              <div class="panel-side">
+                <span id="agents-panel-count" class="panel-counter">0 agents</span>
+                <p>每个 agent 都映射到唯一 NFT。</p>
+              </div>
+            </div>
+            <div id="agents-grid" class="card-grid empty-state">Loading agents...</div>
+          </article>
+
+          <article id="market-panel" class="panel" data-page-section="market">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Market</p>
+                <h2>Marketplace</h2>
+              </div>
+              <div class="panel-side">
+                <span id="market-panel-count" class="panel-counter">0 live listings</span>
+                <p>当前开放挂单和 agent 交易入口。</p>
+              </div>
+            </div>
+            <div id="marketplace-board" class="marketplace-board empty-state">Loading market panel...</div>
+            <div id="listings-grid" class="card-grid empty-state">Loading listings...</div>
+          </article>
+
+          <article id="runs-panel" class="panel" data-page-section="runs">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Execution</p>
+                <h2>Run Queue</h2>
+              </div>
+              <div class="panel-side">
+                <span id="runs-panel-count" class="panel-counter">0 queued</span>
+                <p>查看 queued, running, completed, failed。</p>
+              </div>
+            </div>
+            <div id="runs-table" class="table-shell empty-state">Loading runs...</div>
+          </article>
+
+          <article id="schedules-panel" class="panel" data-page-section="runs">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Automation</p>
+                <h2>Schedules</h2>
+              </div>
+              <div class="panel-side">
+                <span id="schedules-panel-count" class="panel-counter">0 schedules</span>
+                <p>APScheduler 派发的 owner-bound 定时任务。</p>
+              </div>
+            </div>
+            <div id="schedules-grid" class="card-grid empty-state">Loading schedules...</div>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <!-- AGENT DRAWER -->
+    <div id="agent-drawer-backdrop" class="drawer-backdrop hidden"></div>
+    <aside id="agent-drawer" class="agent-drawer hidden" aria-hidden="true">
+      <div class="drawer-head">
+        <div>
+          <p class="panel-kicker">Agent Detail</p>
+          <h2 id="drawer-agent-name">Select an agent</h2>
+        </div>
+        <button id="drawer-close-button" class="ghost" type="button">Close</button>
+      </div>
+      <div id="drawer-agent-meta" class="drawer-subhead">Choose an agent card to inspect its control surface.</div>
+      <div id="drawer-body" class="drawer-body">
+        <div class="drawer-empty">
+          <p>Prompt、metadata、owner 和 run 历史会在这里展开。</p>
+        </div>
+      </div>
+    </aside>
+
+    <script src="/dashboard-assets/app.js" defer></script>
+  </body>
+</html>

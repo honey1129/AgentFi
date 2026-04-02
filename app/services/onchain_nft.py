@@ -7,6 +7,7 @@ from web3 import Web3
 
 from app.core.config import get_settings
 from app.services.token_metadata import build_token_metadata_uri
+from app.services.web3_client import build_web3
 
 
 AGENT_OWNERSHIP_NFT_ABI = [
@@ -93,7 +94,7 @@ def mint_agent_ownership_nft(
     if not Web3.is_address(owner_chain_address):
         raise OnchainMintError("Invalid owner chain address.")
 
-    web3 = Web3(Web3.HTTPProvider(settings.web3_provider_url, request_kwargs={"timeout": 5}))
+    web3 = build_web3(settings.web3_provider_url, timeout=5)
     minter_account = Account.from_key(settings.nft_minter_private_key)
     contract = web3.eth.contract(
         address=Web3.to_checksum_address(contract_address),

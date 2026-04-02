@@ -62,7 +62,7 @@ cat <<EOF
     "deploy": "$DEPLOY_TX_HASH"
   },
   "runtime_env": {
-    "WEB3_PROVIDER_URL": "http://host.docker.internal:8545",
+    "WEB3_PROVIDER_URL": "$RPC_URL",
     "NFT_CONTRACT_ADDRESS": "$NFT_CONTRACT_ADDRESS",
     "MARKETPLACE_CONTRACT_ADDRESS": "$CONTRACT_ADDRESS"
   }

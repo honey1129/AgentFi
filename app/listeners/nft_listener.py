@@ -9,6 +9,7 @@ from app.db.session import SessionLocal
 from app.runtime.redis_client import init_redis
 from app.services.chain_sync import ChainSyncService
 from app.services.onchain_market import AGENT_MARKETPLACE_ABI
+from app.services.web3_client import build_web3
 
 
 TRANSFER_EVENT_ABI = [
@@ -34,7 +35,7 @@ async def run_listener() -> None:
         while True:
             await asyncio.sleep(60)
 
-    web3 = Web3(Web3.HTTPProvider(settings.web3_provider_url))
+    web3 = build_web3(settings.web3_provider_url)
     contract = web3.eth.contract(
         address=Web3.to_checksum_address(settings.nft_contract_address),
         abi=TRANSFER_EVENT_ABI,

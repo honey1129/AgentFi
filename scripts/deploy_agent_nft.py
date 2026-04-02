@@ -15,11 +15,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.services.onchain_nft import build_fee_params
+from app.services.web3_client import build_web3
 
 
 CONTRACT_PATH = ROOT / "contracts" / "AgentOwnershipNFT.sol"
 DEFAULT_ARTIFACT_PATH = ROOT / "contracts" / "artifacts" / "AgentOwnershipNFT.json"
-DEFAULT_SOLC_VERSION = "0.8.24"
+DEFAULT_SOLC_VERSION = "0.8.28"
 
 
 def load_env_file(path: str | None) -> None:
@@ -129,7 +130,7 @@ def main() -> None:
     contract_owner_raw = args.contract_owner or os.getenv("CONTRACT_OWNER")
     runtime_minter_raw = args.runtime_minter or os.getenv("RUNTIME_MINTER_ADDRESS")
 
-    web3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 5}))
+    web3 = build_web3(rpc_url, timeout=5)
     deployer = Account.from_key(private_key)
     contract_owner = Web3.to_checksum_address(contract_owner_raw) if contract_owner_raw else deployer.address
     runtime_minter = Web3.to_checksum_address(runtime_minter_raw) if runtime_minter_raw else None

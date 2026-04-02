@@ -15,11 +15,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.services.onchain_nft import build_fee_params
+from app.services.web3_client import build_web3
 
 
 CONTRACT_PATH = ROOT / "contracts" / "AgentMarketplace.sol"
 DEFAULT_ARTIFACT_PATH = ROOT / "contracts" / "artifacts" / "AgentMarketplace.json"
-DEFAULT_SOLC_VERSION = "0.8.24"
+DEFAULT_SOLC_VERSION = "0.8.28"
 
 
 def load_env_file(path: str | None) -> None:
@@ -126,7 +127,7 @@ def main() -> None:
     )
     solc_version = args.solc_version or os.getenv("SOLC_VERSION", DEFAULT_SOLC_VERSION)
 
-    web3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 5}))
+    web3 = build_web3(rpc_url, timeout=5)
     deployer = Account.from_key(private_key)
     abi, bytecode = compile_contract(solc_version)
     contract = web3.eth.contract(abi=abi, bytecode=bytecode)

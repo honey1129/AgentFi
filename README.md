@@ -61,6 +61,18 @@
 - [AgentOwnershipNFT.sol](/Users/honey/AgentFi/contracts/AgentOwnershipNFT.sol)
 - [AgentMarketplace.sol](/Users/honey/AgentFi/contracts/AgentMarketplace.sol)
 
+仓库现在也带了固定的 Foundry 配置：
+
+- [foundry.toml](/Users/honey/AgentFi/foundry.toml)
+
+它会把后续 Foundry 编译和验证统一固定到：
+
+- `solc 0.8.28`
+- `optimizer = false`
+- `evm_version = prague`
+
+这样后续使用 `forge create / forge verify-contract` 时，不会再因为 Foundry 自动探测到更高版本编译器而导致“部署版本和验证版本不一致”。
+
 它支持：
 
 - `mintTo(address to, string uri)`
@@ -94,6 +106,12 @@ docker compose run --rm api python scripts/deploy_agent_nft.py --env-file deploy
 docker compose run --rm api python scripts/deploy_agent_nft.py --env-file deploy/sepolia.env.example
 ```
 
+如果你准备先上 `Polygon Amoy` 测试网，也可以直接用：
+
+```bash
+docker compose run --rm api python scripts/deploy_agent_nft.py --env-file deploy/amoy.env.example
+```
+
 脚本会：
 
 - 编译合约
@@ -110,6 +128,7 @@ docker compose run --rm api python scripts/deploy_agent_nft.py --env-file deploy
 - [deploy_agent_marketplace.py](/Users/honey/AgentFi/scripts/deploy_agent_marketplace.py)
 - [local.anvil.env.example](/Users/honey/AgentFi/deploy/local.anvil.env.example)
 - [sepolia.env.example](/Users/honey/AgentFi/deploy/sepolia.env.example)
+- [amoy.env.example](/Users/honey/AgentFi/deploy/amoy.env.example)
 
 链上 marketplace 现在也已经包含在仓库里。它是一个最小可用的固定价 escrow 合约：
 
@@ -128,6 +147,12 @@ docker compose run --rm api python scripts/deploy_agent_nft.py --env-file deploy
 
 ```bash
 docker compose run --rm api python scripts/deploy_agent_marketplace.py --env-file deploy/local.anvil.env.example
+```
+
+如果 NFT 已经部署在 `Polygon Amoy`，marketplace 也可以直接用对应 env：
+
+```bash
+docker compose run --rm api python scripts/deploy_agent_marketplace.py --env-file deploy/amoy.env.example
 ```
 
 部署脚本会输出可直接写回 `.env` 的：
@@ -271,12 +296,20 @@ docker compose up --build
    - 已部署的 `AgentMarketplace`
    - 可选 runtime minter 私钥
 
+`Polygon Amoy` 完全可以作为第一条测试链。当前仓库里的合约部署脚本是通用 EVM 部署器，不依赖 Sepolia 特性；只要把 `DEPLOY_RPC_URL` 换成 Amoy RPC，并确保部署钱包里有 Amoy 测试 gas，就可以直接部署。
+
 ### 生产环境变量
 
 先复制模板：
 
 ```bash
 cp deploy/vps.env.example .env.prod
+```
+
+如果你只是先部署合约，不急着启动整套 VPS，也可以先复制链上部署模板：
+
+```bash
+cp deploy/amoy.env.example deploy/amoy.env
 ```
 
 至少要改这些值：

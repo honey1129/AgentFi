@@ -3,6 +3,7 @@ from __future__ import annotations
 from web3 import Web3
 
 from app.core.config import get_settings
+from app.services.web3_client import build_web3
 
 
 class ChainRuntimeService:
@@ -31,7 +32,7 @@ class ChainRuntimeService:
             }
 
         try:
-            web3 = Web3(Web3.HTTPProvider(provider_url, request_kwargs={"timeout": 3}))
+            web3 = build_web3(provider_url, timeout=3)
             chain_id = web3.eth.chain_id
             latest_block = web3.eth.block_number
             checksum_contract = Web3.to_checksum_address(contract_address)

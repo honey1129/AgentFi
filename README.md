@@ -270,10 +270,12 @@ docker compose up --build
 仓库现在已经包含一套单机 VPS 生产部署文件：
 
 - [docker-compose.prod.yml](/Users/honey/AgentFi/docker-compose.prod.yml)
+- [docker-compose.bt.yml](/Users/honey/AgentFi/docker-compose.bt.yml)
 - [Caddyfile](/Users/honey/AgentFi/deploy/Caddyfile)
 - [vps.env.example](/Users/honey/AgentFi/deploy/vps.env.example)
 - [install_vps.sh](/Users/honey/AgentFi/scripts/install_vps.sh)
 - [deploy_vps.sh](/Users/honey/AgentFi/scripts/deploy_vps.sh)
+- [deploy_bt.sh](/Users/honey/AgentFi/scripts/deploy_bt.sh)
 
 这套生产版和本地开发版的差异是：
 
@@ -381,6 +383,39 @@ ENV_FILE=.env.prod docker compose --env-file .env.prod -f docker-compose.prod.ym
 ```bash
 ENV_FILE=.env.prod docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f caddy api worker
 ```
+
+### 宝塔 / Nginx 模式
+
+如果你的 VPS 已经由宝塔或自定义 `nginx` 占用了 `80/443`，不要启动 `caddy`，直接使用：
+
+```bash
+bash scripts/deploy_bt.sh .env.prod
+```
+
+这条路径会：
+
+- 继续复用 [docker-compose.prod.yml](/Users/honey/AgentFi/docker-compose.prod.yml) 的 `api / worker / scheduler / listener / mysql / redis`
+- 通过 [docker-compose.bt.yml](/Users/honey/AgentFi/docker-compose.bt.yml) 把 `api` 映射到本机回环地址
+- 默认绑定到 `127.0.0.1:18000`
+- 不会启动 `caddy`
+
+可选环境变量：
+
+- `BT_BIND_HOST`
+- `BT_BIND_PORT`
+
+例如：
+
+```bash
+BT_BIND_HOST=127.0.0.1 BT_BIND_PORT=18000 bash scripts/deploy_bt.sh .env.prod
+```
+
+宝塔或 `nginx` 里新增一条根路径反向代理即可：
+
+- 域名：`api.nftfoundry.love`
+- 目标地址：`http://127.0.0.1:18000`
+
+如果你已经有路径代理，例如 `location ^~ /blackcats-api`，这一模式不会影响它；AgentFi 应该挂在站点根路径 `/`，由独立的根代理规则转发。
 
 ### 上线后的访问地址
 

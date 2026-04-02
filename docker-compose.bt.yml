@@ -1,0 +1,4 @@
+services:
+  api:
+    ports:
+      - "${BT_BIND_HOST:-127.0.0.1}:${BT_BIND_PORT:-18000}:8000"

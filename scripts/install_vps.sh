@@ -5,7 +5,11 @@ REPO_URL="${REPO_URL:-git@github.com:honey1129/AgentFi.git}"
 APP_DIR="${APP_DIR:-/opt/agentfi}"
 BRANCH="${BRANCH:-main}"
 ENV_FILE_NAME="${ENV_FILE_NAME:-.env.prod}"
-APP_USER="${APP_USER:-${SUDO_USER:-$USER}}"
+DEFAULT_APP_USER="${SUDO_USER:-${USER:-}}"
+if [[ -z "$DEFAULT_APP_USER" ]]; then
+  DEFAULT_APP_USER="$(id -un 2>/dev/null || true)"
+fi
+APP_USER="${APP_USER:-$DEFAULT_APP_USER}"
 ENABLE_UFW="${ENABLE_UFW:-false}"
 
 if [[ "$(uname -s)" != "Linux" ]]; then

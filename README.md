@@ -12,6 +12,48 @@
 - Docker Compose：把整套 runtime 打包成单机可跑的多进程服务
 - Vue + Vite：提供真正按路由拆分的控制台前端
 
+## 当前功能总览
+
+### 鉴权与钱包
+
+- MetaMask challenge + signature 登录
+- runtime session 鉴权，所有写操作默认要求登录
+- 本地 `wallet` 与链上 `chain_address` 映射
+- 目标地址未入库时自动创建 shadow wallet
+
+### Agent 与 NFT
+
+- 创建 agent，并绑定唯一 `agent_nft`
+- 支持自动链上 mint `AgentOwnershipNFT`
+- 支持绑定已有 `contract_address + chain_token_id`
+- 提供 `tokenURI` metadata JSON 和动态 SVG 图片资源
+- 支持 `LOCAL_ONLY / CHAIN_MAPPED_INACTIVE / CHAIN_SYNCED` 三种 ownership mode
+
+### 交易与控制权
+
+- 创建 listing、购买 listing、取消 listing
+- 本地 transfer NFT
+- 链上模式下优先使用 MetaMask 发起 `safeTransferFrom`
+- 监听 ERC-721 `Transfer` 事件并同步 owner
+- 监听链上 marketplace 事件并同步 listing 状态、事件和交易记录
+
+### Runtime 执行
+
+- 手动 queue run
+- Celery 异步执行
+- Redis 锁避免同一 agent 并发执行
+- worker 执行前再次校验 owner，防止排队期间控制权变化
+- 支持 `retry / cancel / timeout / dead-letter`
+- 支持 `runs metrics` 和 `runtime logs`
+- APScheduler 负责 interval schedule 派发
+
+### 控制台前端
+
+- `Vue + Vite` 管理后台
+- 按真实路由拆分，不再是单页锚点
+- 支持 Runtime、Launchpad、Wallets、Agents、Market、Runs 六个域
+- 支持列表页、详情页、操作页三类后台页面
+
 ## 合约与部署
 
 仓库现在包含一个最小可用的 ERC-721 合约：
@@ -150,7 +192,7 @@ NFT 在 runtime 里有 3 种模式：
 - `transaction_records`
   runtime 关联的链上交易记录
 - `agent_runs`
-  异步执行记录，状态包含 `QUEUED / RUNNING / COMPLETED / FAILED`
+  异步执行记录，状态包含 `QUEUED / RUNNING / COMPLETED / FAILED / CANCELLED / TIMED_OUT`
 - `agent_schedules`
   定时任务定义
 - `runtime_checkpoints`
@@ -168,6 +210,35 @@ docker compose up --build
 - API 文档: [http://localhost:8000/docs](http://localhost:8000/docs)
 - MySQL: `localhost:3306`
 - Redis: `localhost:6379`
+
+首次启动时，API 会自动执行数据库初始化和 Alembic migration；后续 schema 变更也通过仓库内的迁移文件统一收敛。
+
+## 控制台页面
+
+控制台现在已经按后台信息架构拆成真实功能页：
+
+- `Runtime`
+  - `/runtime/overview`
+- `Launchpad`
+  - `/launchpad/session`
+  - `/launchpad/create`
+- `Wallets`
+  - `/wallets/registry`
+  - `/wallets/operator`
+  - `/wallets/:walletId`
+- `Agents`
+  - `/agents/library`
+  - `/agents/:agentId`
+- `Market`
+  - `/market/listings`
+  - `/market/transfers`
+  - `/market/listings/:listingId`
+- `Runs`
+  - `/runs/queue`
+  - `/runs/history`
+  - `/runs/history/:runId`
+  - `/runs/schedules`
+  - `/runs/schedules/:scheduleId`
 
 ## 云端 VPS 部署
 
@@ -425,6 +496,32 @@ metadata JSON 里会继续引用动态 SVG 图片：
 curl http://localhost:8000/v1/runs/run_xxx
 ```
 
+### 6.1. 查询 runs metrics
+
+```bash
+curl http://localhost:8000/v1/runs/metrics
+```
+
+### 6.2. 查询 runtime logs
+
+```bash
+curl "http://localhost:8000/v1/runtime/logs?limit=50"
+```
+
+### 6.3. 取消 run
+
+```bash
+curl -X POST http://localhost:8000/v1/runs/run_xxx/cancel \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### 6.4. 重试 run
+
+```bash
+curl -X POST http://localhost:8000/v1/runs/run_xxx/retry \
+  -H "Authorization: Bearer <access_token>"
+```
+
 ### 7. 创建定时任务
 
 ```bash
@@ -448,7 +545,7 @@ curl -X POST http://localhost:8000/v1/listings \
   -d '{"token_id":"nft_xxx","price":"250"}'
 ```
 
-### 8. 购买 agent
+### 9. 购买 agent
 
 ```bash
 curl -X POST http://localhost:8000/v1/listings/listing_xxx/buy \
@@ -459,7 +556,7 @@ curl -X POST http://localhost:8000/v1/listings/listing_xxx/buy \
 
 买完后，当前登录的 MetaMask 对应 runtime wallet 会立刻成为新的 NFT owner；之后的手动调度和定时调度都会跟随新 owner。
 
-### 9. 直接转移给另一个链上地址
+### 10. 直接转移给另一个链上地址
 
 ```bash
 curl -X POST http://localhost:8000/v1/nfts/nft_xxx/transfer \
@@ -497,6 +594,30 @@ worker 在执行 run 时会把：
 
 一起送到模型接口。
 
+## Run 管理能力
+
+这套 runtime 现在已经补齐了比较完整的运行控制：
+
+- `max_attempts`
+  每个 run 可配置最大尝试次数
+- `timeout_seconds`
+  每个 run 可配置单次执行超时
+- `cancel_requested_at`
+  已排队或未完成 run 可请求取消
+- `dead_lettered_at`
+  超过重试上限或显式失败后会进入 dead-letter
+- `parent_run_id`
+  retry 会生成新的 child run，并保留原始 run 链路
+
+配套接口：
+
+- `GET /v1/runs`
+- `GET /v1/runs/{run_id}`
+- `GET /v1/runs/metrics`
+- `POST /v1/runs/{run_id}/cancel`
+- `POST /v1/runs/{run_id}/retry`
+- `GET /v1/runtime/logs`
+
 ## 链上同步
 
 如果你要让 runtime 跟真实 NFT 合约同步，配置：
@@ -516,3 +637,14 @@ listener 会持续轮询该合约的 `Transfer` 事件，并把链上 token owne
 - agent 执行时会拿 Redis 锁，避免同一 agent 并发跑多次
 - 买卖和转移时也会检查 Redis 锁，避免执行中途换 owner
 - run 入队后到真正执行前，会再次校验 owner，保证“谁拥有 NFT，谁控制 agent”
+
+## 迁移与运维
+
+- 数据库 schema 通过 Alembic 管理
+- 迁移文件位于 `migrations/versions`
+- `docker compose` 启动 API 时会自动补齐到当前 head revision
+- Runtime 还提供：
+  - `GET /v1/health`
+  - `GET /v1/runtime/config`
+  - `GET /v1/runs/metrics`
+  - `GET /v1/runtime/logs`

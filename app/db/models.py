@@ -3,7 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -74,10 +74,17 @@ class MarketListing(Base):
 
 class MarketListingChainState(Base):
     __tablename__ = "market_listing_chain_states"
+    __table_args__ = (
+        UniqueConstraint(
+            "market_contract_address",
+            "chain_listing_id",
+            name="uq_market_listing_chain_states_market_contract_chain_listing_id",
+        ),
+    )
 
     listing_id: Mapped[str] = mapped_column(ForeignKey("market_listings.id"), primary_key=True)
     market_contract_address: Mapped[str] = mapped_column(String(64), nullable=False)
-    chain_listing_id: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    chain_listing_id: Mapped[str] = mapped_column(String(120), nullable=False)
     mode: Mapped[str] = mapped_column(String(32), nullable=False, default="ONCHAIN")
     currency_symbol: Mapped[str] = mapped_column(String(16), nullable=False, default="ETH")
     price_wei: Mapped[str] = mapped_column(String(120), nullable=False)

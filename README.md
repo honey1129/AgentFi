@@ -271,11 +271,13 @@ docker compose up --build
 
 - [docker-compose.prod.yml](/Users/honey/AgentFi/docker-compose.prod.yml)
 - [docker-compose.bt.yml](/Users/honey/AgentFi/docker-compose.bt.yml)
+- [docker-compose.host-services.yml](/Users/honey/AgentFi/docker-compose.host-services.yml)
 - [Caddyfile](/Users/honey/AgentFi/deploy/Caddyfile)
 - [vps.env.example](/Users/honey/AgentFi/deploy/vps.env.example)
 - [install_vps.sh](/Users/honey/AgentFi/scripts/install_vps.sh)
 - [deploy_vps.sh](/Users/honey/AgentFi/scripts/deploy_vps.sh)
 - [deploy_bt.sh](/Users/honey/AgentFi/scripts/deploy_bt.sh)
+- [deploy_host_services.sh](/Users/honey/AgentFi/scripts/deploy_host_services.sh)
 
 这套生产版和本地开发版的差异是：
 
@@ -416,6 +418,48 @@ BT_BIND_HOST=127.0.0.1 BT_BIND_PORT=18000 bash scripts/deploy_bt.sh .env.prod
 - 目标地址：`http://127.0.0.1:18000`
 
 如果你已经有路径代理，例如 `location ^~ /blackcats-api`，这一模式不会影响它；AgentFi 应该挂在站点根路径 `/`，由独立的根代理规则转发。
+
+### 宿主机 MySQL / Redis 模式
+
+如果你的 VPS 已经安装了宿主机 `MySQL` 和 `Redis`，而且 `Redis` 只监听 `127.0.0.1:6379`，推荐直接使用：
+
+```bash
+bash scripts/deploy_host_services.sh .env.prod
+```
+
+这条路径会：
+
+- 只启动 [docker-compose.host-services.yml](/Users/honey/AgentFi/docker-compose.host-services.yml) 里的 `api / worker / scheduler / listener`
+- 让这些服务使用宿主机网络
+- 默认把 API 绑定到 `127.0.0.1:18000`
+- 不会启动 `caddy / mysql / redis` 容器
+
+在这种模式下，`.env.prod` 应该直接指向宿主机服务：
+
+```env
+MYSQL_HOST=127.0.0.1
+MYSQL_PORT=3306
+REDIS_URL=redis://127.0.0.1:6379/0
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
+```
+
+可选环境变量：
+
+- `HOST_API_PORT`
+
+例如：
+
+```bash
+HOST_API_PORT=18000 bash scripts/deploy_host_services.sh .env.prod
+```
+
+这条模式尤其适合：
+
+- 宝塔已接管 `80/443`
+- 现有站点不能停
+- MySQL / Redis 已由宿主机统一运维
+- Redis 只监听本机回环地址，容器桥接网络无法直连
 
 ### 上线后的访问地址
 

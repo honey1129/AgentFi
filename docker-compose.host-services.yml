@@ -1,0 +1,56 @@
+services:
+  api:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.prod}
+    network_mode: host
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 127.0.0.1
+      - --port
+      - "${HOST_API_PORT:-18000}"
+      - --proxy-headers
+      - "--forwarded-allow-ips=*"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, urllib.request; port = os.environ.get('HOST_API_PORT', '18000'); urllib.request.urlopen(f'http://127.0.0.1:{port}/v1/health', timeout=5).read()",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  worker:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.prod}
+    network_mode: host
+    command: celery -A app.core.celery_app.celery_app worker --loglevel=info
+
+  scheduler:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.prod}
+    network_mode: host
+    command: python -m app.scheduler
+
+  listener:
+    build:
+      context: .
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.prod}
+    network_mode: host
+    command: python -m app.listeners.nft_listener

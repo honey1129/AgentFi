@@ -272,6 +272,7 @@ docker compose up --build
 - [docker-compose.prod.yml](/Users/honey/AgentFi/docker-compose.prod.yml)
 - [Caddyfile](/Users/honey/AgentFi/deploy/Caddyfile)
 - [vps.env.example](/Users/honey/AgentFi/deploy/vps.env.example)
+- [install_vps.sh](/Users/honey/AgentFi/scripts/install_vps.sh)
 - [deploy_vps.sh](/Users/honey/AgentFi/scripts/deploy_vps.sh)
 
 这套生产版和本地开发版的差异是：
@@ -297,6 +298,28 @@ docker compose up --build
    - 可选 runtime minter 私钥
 
 `Polygon Amoy` 完全可以作为第一条测试链。当前仓库里的合约部署脚本是通用 EVM 部署器，不依赖 Sepolia 特性；只要把 `DEPLOY_RPC_URL` 换成 Amoy RPC，并确保部署钱包里有 Amoy 测试 gas，就可以直接部署。
+
+如果你希望先把 VPS 依赖、Docker、代码目录和 `.env.prod` 模板一次性准备好，可以直接运行：
+
+```bash
+bash scripts/install_vps.sh
+```
+
+这个脚本会：
+
+- 安装 `git / curl / Docker / Docker Compose Plugin`
+- 把当前用户加入 `docker` 组
+- 在默认目录 `/opt/agentfi` 克隆或更新仓库
+- 自动复制 `deploy/vps.env.example` 为 `.env.prod`
+
+可选环境变量：
+
+- `REPO_URL`
+- `APP_DIR`
+- `BRANCH`
+- `ENV_FILE_NAME`
+- `APP_USER`
+- `ENABLE_UFW=true`
 
 ### 生产环境变量
 

@@ -2,6 +2,36 @@ import { computed, reactive } from "vue";
 
 const API_PREFIX = "/v1";
 const AUTH_STORAGE_KEY = "agentfi.metamask.session";
+const CHAIN_REGISTRY = {
+  "1": {
+    chainId: "0x1",
+    chainName: "Ethereum Mainnet",
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://ethereum-rpc.publicnode.com"],
+    blockExplorerUrls: ["https://etherscan.io"],
+  },
+  "137": {
+    chainId: "0x89",
+    chainName: "Polygon",
+    nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+    rpcUrls: ["https://polygon-rpc.com"],
+    blockExplorerUrls: ["https://polygonscan.com"],
+  },
+  "80002": {
+    chainId: "0x13882",
+    chainName: "Polygon Amoy",
+    nativeCurrency: { name: "POL", symbol: "POL", decimals: 18 },
+    rpcUrls: ["https://rpc-amoy.polygon.technology"],
+    blockExplorerUrls: ["https://amoy.polygonscan.com"],
+  },
+  "11155111": {
+    chainId: "0xaa36a7",
+    chainName: "Sepolia",
+    nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: ["https://rpc.sepolia.org"],
+    blockExplorerUrls: ["https://sepolia.etherscan.io"],
+  },
+};
 
 function loadStoredSession() {
   try {
@@ -195,6 +225,115 @@ function applyConnectedAccount(address, chainId) {
   }
 }
 
+function normalizeChainIdValue(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+
+  try {
+    const normalized = String(value).trim();
+    if (!normalized) {
+      return null;
+    }
+    return BigInt(normalized).toString(10);
+  } catch {
+    return null;
+  }
+}
+
+function toHexChainId(value) {
+  const normalized = normalizeChainIdValue(value);
+  if (!normalized) {
+    return null;
+  }
+  return `0x${BigInt(normalized).toString(16)}`;
+}
+
+function getRuntimeChainId() {
+  return normalizeChainIdValue(state.runtime?.chain?.chain_id || state.runtime?.chain_id);
+}
+
+function getRuntimeChainDefinition() {
+  const runtimeChainId = getRuntimeChainId();
+  if (!runtimeChainId) {
+    return null;
+  }
+  return CHAIN_REGISTRY[runtimeChainId] || null;
+}
+
+function getRuntimeChainLabel() {
+  const runtimeChainId = getRuntimeChainId();
+  if (!runtimeChainId) {
+    return "runtime chain";
+  }
+
+  const definition = getRuntimeChainDefinition();
+  return definition ? definition.chainName : `chain ${runtimeChainId}`;
+}
+
+async function ensureRuntimeChain({ showToastOnSwitch = false } = {}) {
+  if (!window.ethereum) {
+    throw new Error("MetaMask not found in this browser.");
+  }
+
+  const runtimeChainId = getRuntimeChainId();
+  if (!runtimeChainId) {
+    return state.metamask.chainId;
+  }
+
+  const targetChainId = toHexChainId(runtimeChainId);
+  const currentChainId = normalizeHex(state.metamask.chainId || (await window.ethereum.request({ method: "eth_chainId" })));
+
+  if (currentChainId === normalizeHex(targetChainId)) {
+    state.metamask.chainId = currentChainId;
+    return currentChainId;
+  }
+
+  const chainLabel = getRuntimeChainLabel();
+
+  try {
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: targetChainId }],
+    });
+  } catch (error) {
+    if (error?.code === 4902) {
+      const definition = getRuntimeChainDefinition();
+      if (!definition) {
+        throw new Error(`MetaMask does not know ${chainLabel}. Add it manually and retry.`);
+      }
+
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [definition],
+        });
+      } catch (addError) {
+        if (addError?.code === 4001) {
+          throw new Error(`MetaMask chain add was rejected. Switch to ${chainLabel} to continue.`);
+        }
+        throw new Error(addError?.message || `Unable to add ${chainLabel} to MetaMask.`);
+      }
+    } else if (error?.code === 4001) {
+      throw new Error(`MetaMask chain switch was rejected. Switch to ${chainLabel} to continue.`);
+    } else {
+      throw new Error(error?.message || `Unable to switch MetaMask to ${chainLabel}.`);
+    }
+  }
+
+  await syncMetaMaskAccount(false);
+
+  if (normalizeHex(state.metamask.chainId) !== normalizeHex(targetChainId)) {
+    throw new Error(`MetaMask is still not connected to ${chainLabel}.`);
+  }
+
+  if (showToastOnSwitch) {
+    showFlash(`MetaMask switched to ${chainLabel}.`, "success");
+  }
+
+  return state.metamask.chainId;
+}
+
 async function connectMetaMask(showToastFlag = false) {
   if (!window.ethereum) {
     state.metamask.available = false;
@@ -204,6 +343,7 @@ async function connectMetaMask(showToastFlag = false) {
   const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
   const chainId = await window.ethereum.request({ method: "eth_chainId" });
   applyConnectedAccount(accounts?.[0] || null, chainId);
+  await ensureRuntimeChain({ showToastOnSwitch: false });
   if (showToastFlag) {
     showFlash("MetaMask connected.", "success");
   }
@@ -274,6 +414,8 @@ async function authenticateMetaMask({ force = false, label = null, initialBalanc
   if (!window.ethereum || !state.metamask.address) {
     throw new Error("MetaMask connection is required.");
   }
+
+  await ensureRuntimeChain({ showToastOnSwitch: true });
 
   if (state.metamask.authenticated && state.metamask.token && !force) {
     return state.metamask.wallet;
@@ -848,6 +990,8 @@ async function openOnChainListing(agent, displayPrice) {
     throw new Error("MetaMask connection is required for on-chain listings.");
   }
 
+  await ensureRuntimeChain({ showToastOnSwitch: false });
+
   const marketAddress = normalizeChainAddress(state.runtime?.marketplace_contract_address);
   const ownerWallet = resolveWalletById(agent.nft.owner_wallet_id);
   const ownerAddress = normalizeChainAddress(ownerWallet?.chain_address);
@@ -899,6 +1043,9 @@ async function buyOnChainListing(listing) {
   if (!window.ethereum || !state.metamask.address) {
     throw new Error("MetaMask connection is required for on-chain purchases.");
   }
+
+  await ensureRuntimeChain({ showToastOnSwitch: false });
+
   const marketAddress = normalizeChainAddress(state.runtime?.marketplace_contract_address);
   if (!marketAddress) {
     throw new Error("Marketplace contract is not configured in the runtime.");
@@ -931,6 +1078,9 @@ async function cancelOnChainListing(listing) {
   if (!window.ethereum || !state.metamask.address) {
     throw new Error("MetaMask connection is required for on-chain listing cancellation.");
   }
+
+  await ensureRuntimeChain({ showToastOnSwitch: false });
+
   const marketAddress = normalizeChainAddress(state.runtime?.marketplace_contract_address);
   if (!marketAddress) {
     throw new Error("Marketplace contract is not configured in the runtime.");
@@ -998,6 +1148,8 @@ async function transferNft(tokenId, toChainAddress) {
       if (!window.ethereum || !state.metamask.address) {
         throw new Error("MetaMask connection is required for chain transfers.");
       }
+
+      await ensureRuntimeChain({ showToastOnSwitch: false });
 
       const ownerWallet = resolveWalletById(agent.nft.owner_wallet_id);
       const ownerAddress = normalizeChainAddress(ownerWallet?.chain_address);

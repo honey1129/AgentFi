@@ -70,28 +70,35 @@
       <div v-if="!relatedRuns.length" class="empty-state">
         No recent runs for this agent yet.
       </div>
-      <div v-else class="stack-grid">
-        <article v-for="run in relatedRuns" :key="run.id" class="entity-card">
-          <div class="entity-card-header">
+      <div v-else class="data-table">
+        <div class="data-table-head compact-history-table">
+          <span>Run</span>
+          <span>Requester</span>
+          <span>Started</span>
+          <span>Task</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+        <article v-for="run in relatedRuns" :key="run.id" class="data-table-row compact-history-table">
+          <div class="table-cell">
             <strong>{{ run.id }}</strong>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ store.describeWallet(run.requested_by_wallet_id) }}</span>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ store.formatDateTime(run.started_at) }}</span>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ store.truncate(run.task_input, 120) }}</span>
+          </div>
+          <div class="table-cell">
             <span class="status-badge">{{ run.status }}</span>
           </div>
-          <dl class="detail-list detail-list-two">
-            <div>
-              <dt>Started</dt>
-              <dd>{{ store.formatDateTime(run.started_at) }}</dd>
+          <div class="table-cell">
+            <div class="table-actions">
+              <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Run Detail</button>
             </div>
-            <div>
-              <dt>Requester</dt>
-              <dd>{{ store.describeWallet(run.requested_by_wallet_id) }}</dd>
-            </div>
-            <div>
-              <dt>Task</dt>
-              <dd>{{ store.truncate(run.task_input, 220) }}</dd>
-            </div>
-          </dl>
-          <div class="action-row">
-            <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Run Detail</button>
           </div>
         </article>
       </div>

@@ -18,7 +18,7 @@
       </article>
     </section>
 
-    <section class="panel">
+    <section class="panel page-grid-full">
       <header class="panel-header">
         <div>
           <p class="section-label">History</p>
@@ -29,78 +29,84 @@
       <div v-if="!sortedRuns.length" class="empty-state">
         No execution history yet.
       </div>
-      <div v-else class="stack-grid">
-        <article v-for="run in sortedRuns" :key="run.id" class="entity-card">
-          <div class="entity-card-header">
-            <strong>{{ run.id }}</strong>
-            <div class="action-row">
-              <span class="status-badge">{{ run.status }}</span>
-              <span v-if="store.isDeadLettered(run)" class="status-badge">Dead Letter</span>
-              <button class="ghost-button" type="button" @click="toggleRun(run.id)">
-                {{ expandedRunIds.includes(run.id) ? "Hide Output" : "Show Output" }}
-              </button>
-              <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Detail</button>
-              <button class="ghost-button" type="button" @click="router.push(`/agents/${run.agent_id}`)">Agent</button>
+      <div v-else class="data-table">
+        <div class="data-table-head history-table">
+          <span>Run</span>
+          <span>Agent</span>
+          <span>Requester</span>
+          <span>Attempts</span>
+          <span>Timeline</span>
+          <span>Actions</span>
+        </div>
+        <template v-for="run in sortedRuns" :key="run.id">
+          <article class="data-table-row history-table">
+            <div class="table-cell">
+              <div class="cell-stack">
+                <strong>{{ run.id }}</strong>
+                <div class="table-badge-row">
+                  <span class="status-badge">{{ run.status }}</span>
+                  <span v-if="store.isDeadLettered(run)" class="status-badge">Dead Letter</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <dl class="detail-list detail-list-two">
-            <div>
-              <dt>Agent</dt>
-              <dd>{{ run.agent_id }}</dd>
+            <div class="table-cell">
+              <div class="cell-stack">
+                <strong>{{ run.agent_id }}</strong>
+                <span class="text-muted">{{ store.truncate(run.task_input, 84) }}</span>
+              </div>
             </div>
-            <div>
-              <dt>Requester</dt>
-              <dd>{{ store.describeWallet(run.requested_by_wallet_id) }}</dd>
+            <div class="table-cell">
+              <span class="text-muted">{{ store.describeWallet(run.requested_by_wallet_id) }}</span>
             </div>
-            <div>
-              <dt>Attempts</dt>
-              <dd>{{ run.attempt_count }} / {{ run.max_attempts }}</dd>
+            <div class="table-cell">
+              <div class="cell-stack">
+                <strong>{{ run.attempt_count }} / {{ run.max_attempts }}</strong>
+                <span class="text-muted">{{ run.timeout_seconds }}s timeout</span>
+              </div>
             </div>
-            <div>
-              <dt>Timeout</dt>
-              <dd>{{ run.timeout_seconds }}s</dd>
+            <div class="table-cell">
+              <div class="cell-stack">
+                <strong>{{ store.formatRunDuration(run) }}</strong>
+                <span class="text-muted">{{ store.formatDateTime(run.queued_at) }}</span>
+                <span v-if="run.next_retry_at" class="text-muted">Retry {{ store.formatDateTime(run.next_retry_at) }}</span>
+              </div>
             </div>
-            <div>
-              <dt>Queued</dt>
-              <dd>{{ store.formatDateTime(run.queued_at) }}</dd>
+            <div class="table-cell">
+              <div class="table-actions">
+                <button class="ghost-button" type="button" @click="toggleRun(run.id)">
+                  {{ expandedRunIds.includes(run.id) ? "Hide Output" : "Show Output" }}
+                </button>
+                <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Detail</button>
+                <button class="ghost-button" type="button" @click="router.push(`/agents/${run.agent_id}`)">Agent</button>
+                <button
+                  v-if="!store.isTerminalRun(run)"
+                  class="ghost-button"
+                  type="button"
+                  @click="store.cancelRun(run.id)"
+                >
+                  Cancel
+                </button>
+                <button
+                  v-else
+                  class="ghost-button"
+                  type="button"
+                  @click="store.retryRun(run.id)"
+                >
+                  Retry
+                </button>
+              </div>
             </div>
-            <div>
-              <dt>Duration</dt>
-              <dd>{{ store.formatRunDuration(run) }}</dd>
+          </article>
+          <article v-if="expandedRunIds.includes(run.id)" class="data-table-row history-table-expanded">
+            <div class="table-cell table-cell-full">
+              <div v-if="run.failure_reason" class="surface-block compact-surface-block">
+                <p class="surface-kicker">Failure</p>
+                <h3 class="surface-title">{{ run.failure_reason }}</h3>
+              </div>
+              <pre class="code-block">{{ store.formatRunOutput(run.output) }}</pre>
             </div>
-            <div>
-              <dt>Task</dt>
-              <dd>{{ store.truncate(run.task_input, 220) }}</dd>
-            </div>
-            <div v-if="run.failure_reason">
-              <dt>Failure</dt>
-              <dd>{{ run.failure_reason }}</dd>
-            </div>
-            <div v-if="run.next_retry_at">
-              <dt>Next Retry</dt>
-              <dd>{{ store.formatDateTime(run.next_retry_at) }}</dd>
-            </div>
-          </dl>
-          <div class="action-row">
-            <button
-              v-if="!store.isTerminalRun(run)"
-              class="ghost-button"
-              type="button"
-              @click="store.cancelRun(run.id)"
-            >
-              Cancel
-            </button>
-            <button
-              v-else
-              class="ghost-button"
-              type="button"
-              @click="store.retryRun(run.id)"
-            >
-              Retry
-            </button>
-          </div>
-          <pre v-if="expandedRunIds.includes(run.id)" class="code-block">{{ store.formatRunOutput(run.output) }}</pre>
-        </article>
+          </article>
+        </template>
       </div>
     </section>
   </div>

@@ -61,24 +61,30 @@
       <div v-if="!ownedAgents.length" class="empty-state">
         This wallet does not currently control any agent NFTs.
       </div>
-      <div v-else class="stack-grid">
-        <article v-for="agent in ownedAgents" :key="agent.id" class="entity-card">
-          <div class="entity-card-header">
-            <strong>{{ agent.name }}</strong>
+      <div v-else class="data-table">
+        <div class="data-table-head compact-detail-table">
+          <span>Agent</span>
+          <span>Token</span>
+          <span>Mode</span>
+          <span>Actions</span>
+        </div>
+        <article v-for="agent in ownedAgents" :key="agent.id" class="data-table-row compact-detail-table">
+          <div class="table-cell">
+            <div class="cell-stack">
+              <strong>{{ agent.name }}</strong>
+              <span class="text-muted">{{ agent.id }}</span>
+            </div>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ agent.nft.token_id }}</span>
+          </div>
+          <div class="table-cell">
             <span class="status-badge">{{ store.formatSyncMode(agent.nft.sync_mode) }}</span>
           </div>
-          <dl class="detail-list">
-            <div>
-              <dt>Agent ID</dt>
-              <dd>{{ agent.id }}</dd>
+          <div class="table-cell">
+            <div class="table-actions">
+              <button class="ghost-button" type="button" @click="router.push(`/agents/${agent.id}`)">Agent Detail</button>
             </div>
-            <div>
-              <dt>NFT</dt>
-              <dd>{{ agent.nft.token_id }}</dd>
-            </div>
-          </dl>
-          <div class="action-row">
-            <button class="ghost-button" type="button" @click="router.push(`/agents/${agent.id}`)">Agent Detail</button>
           </div>
         </article>
       </div>
@@ -95,24 +101,30 @@
       <div v-if="!walletListings.length" class="empty-state">
         This wallet is not currently the seller on any open listing.
       </div>
-      <div v-else class="stack-grid">
-        <article v-for="listing in walletListings" :key="listing.id" class="entity-card">
-          <div class="entity-card-header">
-            <strong>{{ listing.id }}</strong>
-            <span class="status-badge">{{ listing.price }}</span>
+      <div v-else class="data-table">
+        <div class="data-table-head compact-detail-table">
+          <span>Listing</span>
+          <span>Agent</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+        <article v-for="listing in walletListings" :key="listing.id" class="data-table-row compact-detail-table">
+          <div class="table-cell">
+            <div class="cell-stack">
+              <strong>{{ listing.id }}</strong>
+              <span class="text-muted">{{ listing.price }}</span>
+            </div>
           </div>
-          <dl class="detail-list">
-            <div>
-              <dt>Agent</dt>
-              <dd>{{ listing.agent_id }}</dd>
+          <div class="table-cell">
+            <span class="text-muted">{{ listing.agent_id }}</span>
+          </div>
+          <div class="table-cell">
+            <span class="status-badge">{{ listing.status }}</span>
+          </div>
+          <div class="table-cell">
+            <div class="table-actions">
+              <button class="ghost-button" type="button" @click="router.push(`/market/listings/${listing.id}`)">Listing Detail</button>
             </div>
-            <div>
-              <dt>Status</dt>
-              <dd>{{ listing.status }}</dd>
-            </div>
-          </dl>
-          <div class="action-row">
-            <button class="ghost-button" type="button" @click="router.push(`/market/listings/${listing.id}`)">Listing Detail</button>
           </div>
         </article>
       </div>
@@ -129,24 +141,30 @@
       <div v-if="!walletRuns.length" class="empty-state">
         No run requests from this wallet have been recorded yet.
       </div>
-      <div v-else class="stack-grid">
-        <article v-for="run in walletRuns" :key="run.id" class="entity-card">
-          <div class="entity-card-header">
-            <strong>{{ run.id }}</strong>
+      <div v-else class="data-table">
+        <div class="data-table-head compact-detail-table">
+          <span>Run</span>
+          <span>Agent</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+        <article v-for="run in walletRuns" :key="run.id" class="data-table-row compact-detail-table">
+          <div class="table-cell">
+            <div class="cell-stack">
+              <strong>{{ run.id }}</strong>
+              <span class="text-muted">{{ store.formatDateTime(run.started_at) }}</span>
+            </div>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ run.agent_id }}</span>
+          </div>
+          <div class="table-cell">
             <span class="status-badge">{{ run.status }}</span>
           </div>
-          <dl class="detail-list">
-            <div>
-              <dt>Agent</dt>
-              <dd>{{ run.agent_id }}</dd>
+          <div class="table-cell">
+            <div class="table-actions">
+              <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Run Detail</button>
             </div>
-            <div>
-              <dt>Started</dt>
-              <dd>{{ store.formatDateTime(run.started_at) }}</dd>
-            </div>
-          </dl>
-          <div class="action-row">
-            <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Run Detail</button>
           </div>
         </article>
       </div>

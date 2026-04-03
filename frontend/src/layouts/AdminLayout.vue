@@ -5,6 +5,8 @@
         :nav-items="navItems"
         :current-section="currentSection"
         :active-subsection="activeSubsection"
+        :operator-summary="accessSummary"
+        :runtime-summary="helperText"
       />
 
       <main class="admin-main">
@@ -12,7 +14,6 @@
           :breadcrumb="breadcrumb"
           :title="title"
           :section-label="sectionLabel"
-          :headline="headline"
           :description="description"
           :access-summary="accessSummary"
           :helper-text="helperText"
@@ -23,7 +24,6 @@
         <AdminSectionTabs
           v-if="subnavItems.length"
           :items="subnavItems"
-          :section-label="sectionLabel"
           :active-subsection="activeSubsection"
         />
 
@@ -68,10 +68,6 @@ defineProps({
     required: true,
   },
   sectionLabel: {
-    type: String,
-    required: true,
-  },
-  headline: {
     type: String,
     required: true,
   },

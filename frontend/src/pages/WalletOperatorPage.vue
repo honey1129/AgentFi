@@ -1,6 +1,24 @@
 <template>
-  <div class="page-grid page-grid-two">
-    <section class="panel">
+  <div class="page-grid">
+    <section class="metric-strip">
+      <article class="metric-card">
+        <span>Session</span>
+        <strong>{{ store.authenticated.value ? "Signed" : "Unsigned" }}</strong>
+        <p>{{ store.authenticated.value ? "Current operator can submit runtime writes." : "Challenge signature still required for protected actions." }}</p>
+      </article>
+      <article class="metric-card">
+        <span>Connected Address</span>
+        <strong>{{ store.state.metamask.address ? store.truncate(store.state.metamask.address, 16) : "Not connected" }}</strong>
+        <p>{{ store.state.metamask.chainId ? `Chain ${store.state.metamask.chainId}` : "No MetaMask chain detected." }}</p>
+      </article>
+      <article class="metric-card">
+        <span>Mapped Wallet</span>
+        <strong>{{ store.state.metamask.wallet?.name || store.state.metamask.wallet?.id || "Not mapped" }}</strong>
+        <p>Runtime wallet currently bound to the active browser operator.</p>
+      </article>
+    </section>
+
+    <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
           <p class="section-label">Operator</p>
@@ -40,7 +58,7 @@
       </div>
     </section>
 
-    <section class="panel">
+    <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
           <p class="section-label">Runtime Wallet</p>

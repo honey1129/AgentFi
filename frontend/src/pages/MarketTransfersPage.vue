@@ -1,6 +1,24 @@
 <template>
-  <div class="page-grid page-grid-two">
-    <section class="panel">
+  <div class="page-grid">
+    <section class="metric-strip">
+      <article class="metric-card">
+        <span>Transferable NFTs</span>
+        <strong>{{ store.state.agents.length }}</strong>
+        <p>NFT-backed agents currently available for direct handoff.</p>
+      </article>
+      <article class="metric-card">
+        <span>Chain Synced</span>
+        <strong>{{ chainSyncedCount }}</strong>
+        <p>Transfers that will prefer a real on-chain MetaMask flow.</p>
+      </article>
+      <article class="metric-card">
+        <span>Selected NFT</span>
+        <strong>{{ transferForm.token_id || "None" }}</strong>
+        <p>{{ transferForm.to_chain_address || "Pick a token and destination address to prepare transfer." }}</p>
+      </article>
+    </section>
+
+    <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
           <p class="section-label">Actions</p>
@@ -33,7 +51,7 @@
       </form>
     </section>
 
-    <section class="panel">
+    <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
           <p class="section-label">Inventory</p>
@@ -44,29 +62,39 @@
       <div v-if="!store.state.agents.length" class="empty-state">
         No NFT-backed agents exist yet.
       </div>
-      <div v-else class="entity-grid">
-        <article v-for="agent in store.state.agents" :key="agent.id" class="entity-card">
-          <div class="entity-card-header">
-            <strong>{{ agent.name }}</strong>
+      <div v-else class="data-table">
+        <div class="data-table-head transfer-table">
+          <span>Agent</span>
+          <span>Token</span>
+          <span>Owner</span>
+          <span>Mode</span>
+          <span>Contract</span>
+          <span>Actions</span>
+        </div>
+        <article v-for="agent in store.state.agents" :key="agent.id" class="data-table-row transfer-table">
+          <div class="table-cell">
+            <div class="cell-stack">
+              <strong>{{ agent.name }}</strong>
+              <span class="text-muted">{{ agent.id }}</span>
+            </div>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ agent.nft.token_id }}</span>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ store.describeWallet(agent.nft.owner_wallet_id) }}</span>
+          </div>
+          <div class="table-cell">
             <span class="status-badge">{{ store.formatSyncMode(agent.nft.sync_mode) }}</span>
           </div>
-          <dl class="detail-list">
-            <div>
-              <dt>NFT</dt>
-              <dd>{{ agent.nft.token_id }}</dd>
+          <div class="table-cell">
+            <span class="text-muted">{{ agent.nft.contract_address || "Local only" }}</span>
+          </div>
+          <div class="table-cell">
+            <div class="table-actions">
+              <button class="ghost-button" type="button" @click="prefillTransfer(agent.nft.token_id)">Use in Form</button>
+              <button class="ghost-button" type="button" @click="router.push(`/agents/${agent.id}`)">Agent Detail</button>
             </div>
-            <div>
-              <dt>Owner</dt>
-              <dd>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</dd>
-            </div>
-            <div>
-              <dt>Contract</dt>
-              <dd>{{ agent.nft.contract_address || "Local only" }}</dd>
-            </div>
-          </dl>
-          <div class="action-row">
-            <button class="ghost-button" type="button" @click="prefillTransfer(agent.nft.token_id)">Use in Form</button>
-            <button class="ghost-button" type="button" @click="router.push(`/agents/${agent.id}`)">Agent Detail</button>
           </div>
         </article>
       </div>
@@ -75,7 +103,7 @@
 </template>
 
 <script setup>
-import { reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useRuntimeStore } from "@/store/runtime";
@@ -88,6 +116,9 @@ const transferForm = reactive({
   token_id: "",
   to_chain_address: "",
 });
+const chainSyncedCount = computed(() =>
+  store.state.agents.filter((agent) => agent.nft.sync_mode === "CHAIN_SYNCED").length
+);
 
 watch(
   () => route.query,

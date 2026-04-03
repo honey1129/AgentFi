@@ -1,13 +1,12 @@
 <template>
   <AdminLayout
-    :theme-class="appThemeClass"
+    :theme-class="'theme-admin'"
     :nav-items="navItems"
     :current-section="currentSection"
     :active-subsection="currentSubsection"
     :breadcrumb="breadcrumb"
     :title="pageMeta.title"
     :section-label="currentSectionConfig?.label || 'Workspace'"
-    :headline="pageMeta.headline"
     :description="pageMeta.description"
     :access-summary="accessSummary"
     :helper-text="topbarNote"
@@ -39,37 +38,32 @@ const store = useRuntimeStore();
 const navItems = workspaceSections;
 
 const pageMeta = computed(() => ({
-  eyebrow: "AgentFi Runtime",
   title: "Workspace",
-  headline: "Operate NFT-backed agents through focused runtime pages.",
-  description: "Each route keeps one job in view so wallet auth, ownership, trade, and execution do not collapse into one noisy dashboard.",
-  summaryTitle: "Overview",
-  summaryBody: "The shell stays shared, but each route keeps a narrower toolset and a clearer page purpose.",
+  description: "Operate NFT-backed agents through dedicated management workflows.",
   ...(route.meta || {}),
 }));
 
 const currentWallet = computed(() => store.state.metamask.wallet);
 const currentSection = computed(() => route.meta.section || inferSection(route.path));
 const currentSubsection = computed(() => route.meta.subsection || null);
-const appThemeClass = computed(() => `theme-${currentSection.value || "default"}`);
 const currentSectionConfig = computed(() => navItems.find((item) => item.section === currentSection.value) || null);
 const subnavItems = computed(() => currentSectionConfig.value?.children || []);
 const currentSubsectionConfig = computed(() => subnavItems.value.find((item) => item.id === currentSubsection.value) || null);
 
 const topbarNote = computed(() => {
   if (store.authenticated.value && currentWallet.value) {
-    return `Signed as ${currentWallet.value.name || truncateAddress(currentWallet.value.chain_address || currentWallet.value.id)}`;
+    return currentWallet.value.name || truncateAddress(currentWallet.value.chain_address || currentWallet.value.id);
   }
   if (store.state.metamask.address) {
-    return `MetaMask connected: ${truncateAddress(store.state.metamask.address)}`;
+    return `MetaMask ${truncateAddress(store.state.metamask.address)}`;
   }
-  return "Connect MetaMask from Launchpad to unlock write actions.";
+  return "Unsigned session";
 });
 
 const breadcrumb = computed(() =>
-  ["Admin", currentSectionConfig.value?.label, currentSubsectionConfig.value?.label].filter(Boolean).join(" / ")
+  [currentSectionConfig.value?.label, currentSubsectionConfig.value?.label].filter(Boolean).join(" / ")
 );
-const accessSummary = computed(() => (store.authenticated.value ? "Signed operator can submit writes." : "Read-only until MetaMask sign-in completes."));
+const accessSummary = computed(() => (store.authenticated.value ? "Signed session" : "Read only"));
 
 function inferSection(path) {
   if (path.startsWith("/runtime")) {

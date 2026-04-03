@@ -1,33 +1,87 @@
 <template>
   <div class="page-grid">
-    <section class="panel page-grid-full">
-      <header class="panel-header">
-        <div>
-          <p class="section-label">System Snapshot</p>
-          <h2>Runtime Overview</h2>
-        </div>
-        <span class="panel-chip">{{ runtimeHealth }}</span>
-      </header>
-      <p class="panel-intro">
-        Keep global runtime health, operator access, chain posture, and registry counts on this dedicated route. The rest of the workspace can stay focused on the task of each section.
-      </p>
-      <AdminStatusStrip
-        :status-rows="statusRows"
-        :network-metrics="networkMetrics"
-      />
+    <section class="metric-strip">
+      <article v-for="item in networkMetrics" :key="item.label" class="metric-card">
+        <span>{{ item.label }}</span>
+        <strong>{{ item.value }}</strong>
+        <p>{{ item.detail }}</p>
+      </article>
     </section>
 
     <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
-          <p class="section-label">Operational Areas</p>
-          <h2>Jump To A Domain</h2>
+          <p class="section-label">System</p>
+          <h2>Runtime Posture</h2>
+        </div>
+        <span class="panel-chip">{{ runtimeHealth }}</span>
+      </header>
+      <AdminStatusStrip :status-rows="statusRows" :network-metrics="[]" />
+    </section>
+
+    <section class="panel page-grid-half">
+      <header class="panel-header">
+        <div>
+          <p class="section-label">Environment</p>
+          <h2>Connection &amp; Chain</h2>
         </div>
       </header>
-      <p class="panel-intro">
-        Use the overview as a system home. Move into the domain pages only when you are ready to authenticate, inspect ownership, trade control, or manage execution.
-      </p>
-      <div class="entity-grid">
+      <div class="stack-grid">
+        <div class="surface-block">
+          <p class="surface-kicker">Current Session</p>
+          <h3 class="surface-title">Operator context</h3>
+          <dl class="detail-list detail-list-two">
+            <div>
+              <dt>MetaMask Address</dt>
+              <dd>{{ store.state.metamask.address || "Not connected" }}</dd>
+            </div>
+            <div>
+              <dt>Runtime Wallet</dt>
+              <dd>{{ store.state.metamask.wallet?.name || store.state.metamask.wallet?.id || "Not mapped" }}</dd>
+            </div>
+            <div>
+              <dt>Chain ID</dt>
+              <dd>{{ store.state.metamask.chainId || "Unavailable" }}</dd>
+            </div>
+            <div>
+              <dt>Session</dt>
+              <dd>{{ store.authenticated.value ? "Signed" : "Unsigned" }}</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="surface-block">
+          <p class="surface-kicker">Ownership Sync</p>
+          <h3 class="surface-title">Chain linkage</h3>
+          <dl class="detail-list detail-list-two">
+            <div>
+              <dt>Contract</dt>
+              <dd>{{ store.state.runtime?.nft_contract_address || "Not configured" }}</dd>
+            </div>
+            <div>
+              <dt>Marketplace</dt>
+              <dd>{{ store.state.runtime?.marketplace_contract_address || "Not configured" }}</dd>
+            </div>
+            <div>
+              <dt>Chain Sync</dt>
+              <dd>{{ store.state.runtime?.chain_sync_state || "DISABLED" }}</dd>
+            </div>
+            <div>
+              <dt>Auto Mint</dt>
+              <dd>{{ store.state.runtime?.auto_onchain_mint_enabled ? "Enabled" : "Disabled" }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel page-grid-half">
+      <header class="panel-header">
+        <div>
+          <p class="section-label">Navigation</p>
+          <h2>Operational Domains</h2>
+        </div>
+      </header>
+      <div class="entity-grid compact-entity-grid">
         <RouterLink
           v-for="link in quickLinks"
           :key="link.to"
@@ -46,59 +100,12 @@
     <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
-          <p class="section-label">Context</p>
-          <h2>Live Runtime Posture</h2>
-        </div>
-      </header>
-      <p class="panel-intro">
-        This view keeps the most important environment facts in one place so you can understand how the runtime is configured before making changes elsewhere.
-      </p>
-
-      <div class="surface-block stack-grid">
-        <p class="surface-kicker">Current Environment</p>
-        <h3 class="surface-title">Operator, chain, and ownership sync</h3>
-        <dl class="detail-list detail-list-two">
-          <div>
-            <dt>MetaMask Address</dt>
-            <dd>{{ store.state.metamask.address || "Not connected" }}</dd>
-          </div>
-          <div>
-            <dt>Runtime Wallet</dt>
-            <dd>{{ store.state.metamask.wallet?.name || store.state.metamask.wallet?.id || "Not mapped" }}</dd>
-          </div>
-          <div>
-            <dt>Chain ID</dt>
-            <dd>{{ store.state.metamask.chainId || "Unavailable" }}</dd>
-          </div>
-          <div>
-            <dt>Contract</dt>
-            <dd>{{ store.state.runtime?.nft_contract_address || "Not configured" }}</dd>
-          </div>
-          <div>
-            <dt>Chain Sync State</dt>
-            <dd>{{ store.state.runtime?.chain_sync_state || "DISABLED" }}</dd>
-          </div>
-          <div>
-            <dt>Chain Sync Enabled</dt>
-            <dd>{{ store.state.runtime?.chain_sync_enabled ? "Yes" : "No" }}</dd>
-          </div>
-        </dl>
-      </div>
-
-      <div class="empty-state">
-        These platform-wide indicators live only on this route now. Route pages such as Agents, Market, and Runs stay narrower and only focus on their own workflows.
-      </div>
-    </section>
-
-    <section class="panel page-grid-half">
-      <header class="panel-header">
-        <div>
-          <p class="section-label">Execution Telemetry</p>
-          <h2>Queue, Retry, and Dead Letter</h2>
+          <p class="section-label">Execution</p>
+          <h2>Queue Health</h2>
         </div>
         <span class="panel-chip">{{ store.state.runMetrics?.queue_depth ?? 0 }} queued</span>
       </header>
-      <div class="metric-strip">
+      <div class="metric-strip metric-strip-embedded">
         <article class="metric-card">
           <span>Retry Pending</span>
           <strong>{{ store.state.runMetrics?.retry_pending_count ?? 0 }}</strong>
@@ -135,24 +142,33 @@
       </dl>
     </section>
 
-    <section class="panel page-grid-half">
+    <section class="panel page-grid-full">
       <header class="panel-header">
         <div>
           <p class="section-label">Runtime Logs</p>
-          <h2>Recent Event Stream</h2>
+          <h2>Recent Events</h2>
         </div>
         <span class="panel-chip">{{ store.state.runtimeLogs.length }} entries</span>
       </header>
       <div v-if="!store.state.runtimeLogs.length" class="empty-state">
         No runtime events recorded yet.
       </div>
-      <div v-else class="stack-grid">
-        <article v-for="entry in store.state.runtimeLogs" :key="entry.id" class="entity-card">
-          <div class="entity-card-header">
+      <div v-else class="data-table">
+        <div class="data-table-head log-table">
+          <span>Event</span>
+          <span>Timestamp</span>
+          <span>Payload</span>
+        </div>
+        <article v-for="entry in store.state.runtimeLogs" :key="entry.id" class="data-table-row log-table">
+          <div class="table-cell">
             <strong>{{ entry.event_type }}</strong>
-            <span class="status-badge">{{ store.formatDateTime(new Date(entry.timestamp_ms).toISOString()) }}</span>
           </div>
-          <pre class="code-block">{{ JSON.stringify(entry.fields, null, 2) }}</pre>
+          <div class="table-cell">
+            <span class="text-muted">{{ store.formatDateTime(new Date(entry.timestamp_ms).toISOString()) }}</span>
+          </div>
+          <div class="table-cell">
+            <pre class="code-block compact-code-block">{{ JSON.stringify(entry.fields, null, 2) }}</pre>
+          </div>
         </article>
       </div>
     </section>

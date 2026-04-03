@@ -1,6 +1,24 @@
 <template>
-  <div class="page-grid page-grid-two">
-    <section class="panel">
+  <div class="page-grid">
+    <section class="metric-strip">
+      <article class="metric-card">
+        <span>Schedules</span>
+        <strong>{{ store.state.schedules.length }}</strong>
+        <p>Automation rules currently registered in the runtime.</p>
+      </article>
+      <article class="metric-card">
+        <span>Enabled</span>
+        <strong>{{ enabledSchedulesCount }}</strong>
+        <p>Schedules actively allowed to dispatch new runs.</p>
+      </article>
+      <article class="metric-card">
+        <span>Tracked Agents</span>
+        <strong>{{ scheduledAgentsCount }}</strong>
+        <p>Distinct agents currently attached to a schedule.</p>
+      </article>
+    </section>
+
+    <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
           <p class="section-label">Automation</p>
@@ -36,42 +54,52 @@
       </form>
     </section>
 
-    <section class="panel">
+    <section class="panel page-grid-half">
       <header class="panel-header">
         <div>
-          <p class="section-label">Automation</p>
+          <p class="section-label">Registry</p>
           <h2>Schedules</h2>
         </div>
+        <span class="panel-chip">{{ store.state.schedules.length }} schedules</span>
       </header>
       <div v-if="!store.state.schedules.length" class="empty-state">
         No schedules yet.
       </div>
-      <div v-else class="entity-grid">
-        <article v-for="schedule in store.state.schedules" :key="schedule.id" class="entity-card">
-          <div class="entity-card-header">
-            <strong>{{ schedule.id }}</strong>
-            <span class="status-badge">{{ schedule.interval_seconds }}s</span>
+      <div v-else class="data-table">
+        <div class="data-table-head schedule-table">
+          <span>Schedule</span>
+          <span>Agent</span>
+          <span>State</span>
+          <span>Timing</span>
+          <span>Template</span>
+          <span>Actions</span>
+        </div>
+        <article v-for="schedule in store.state.schedules" :key="schedule.id" class="data-table-row schedule-table">
+          <div class="table-cell">
+            <div class="cell-stack">
+              <strong>{{ schedule.id }}</strong>
+              <span class="text-muted">{{ schedule.interval_seconds }}s interval</span>
+            </div>
           </div>
-          <dl class="detail-list">
-            <div>
-              <dt>Agent</dt>
-              <dd>{{ schedule.agent_id }}</dd>
+          <div class="table-cell">
+            <span class="text-muted">{{ schedule.agent_id }}</span>
+          </div>
+          <div class="table-cell">
+            <span class="status-badge">{{ schedule.enabled ? "Enabled" : "Paused" }}</span>
+          </div>
+          <div class="table-cell">
+            <div class="cell-stack">
+              <strong>{{ store.formatDateTime(schedule.next_run_at) }}</strong>
+              <span class="text-muted">Starts in {{ schedule.starts_in_seconds ?? 0 }}s</span>
             </div>
-            <div>
-              <dt>Enabled</dt>
-              <dd>{{ String(schedule.enabled) }}</dd>
+          </div>
+          <div class="table-cell">
+            <span class="text-muted">{{ store.truncate(schedule.task_template, 120) }}</span>
+          </div>
+          <div class="table-cell">
+            <div class="table-actions">
+              <button class="ghost-button" type="button" @click="router.push(`/runs/schedules/${schedule.id}`)">Detail</button>
             </div>
-            <div>
-              <dt>Next Run</dt>
-              <dd>{{ schedule.next_run_at }}</dd>
-            </div>
-            <div>
-              <dt>Task</dt>
-              <dd>{{ store.truncate(schedule.task_template, 180) }}</dd>
-            </div>
-          </dl>
-          <div class="action-row">
-            <button class="ghost-button" type="button" @click="router.push(`/runs/schedules/${schedule.id}`)">Detail</button>
           </div>
         </article>
       </div>
@@ -80,7 +108,7 @@
 </template>
 
 <script setup>
-import { reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { useRuntimeStore } from "@/store/runtime";
@@ -95,6 +123,8 @@ const scheduleForm = reactive({
   interval_seconds: "300",
   starts_in_seconds: "30",
 });
+const enabledSchedulesCount = computed(() => store.state.schedules.filter((schedule) => schedule.enabled).length);
+const scheduledAgentsCount = computed(() => new Set(store.state.schedules.map((schedule) => schedule.agent_id)).size);
 
 watch(
   () => route.query,

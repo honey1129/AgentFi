@@ -26,51 +26,53 @@
         </div>
         <span class="panel-chip">{{ resolvedListing.status }}</span>
       </header>
-      <div class="spotlight-media">
-        <img :src="store.getTokenImageUrl(resolvedListing.token_id)" :alt="agent.name" />
+      <div class="stack-grid">
+        <div class="spotlight-media">
+          <img :src="store.getTokenImageUrl(resolvedListing.token_id)" :alt="agent.name" />
+        </div>
+        <dl class="detail-list detail-list-two">
+          <div>
+            <dt>Price</dt>
+            <dd>{{ resolvedListing.price }}</dd>
+          </div>
+          <div>
+            <dt>NFT Token</dt>
+            <dd>{{ resolvedListing.token_id }}</dd>
+          </div>
+          <div>
+            <dt>Seller</dt>
+            <dd>{{ store.describeWallet(resolvedListing.seller_wallet_id) }}</dd>
+          </div>
+          <div>
+            <dt>Holder</dt>
+            <dd>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</dd>
+          </div>
+          <div>
+            <dt>Sync Mode</dt>
+            <dd>{{ store.formatSyncMode(agent.nft.sync_mode) }}</dd>
+          </div>
+          <div>
+            <dt>Market Mode</dt>
+            <dd>{{ resolvedListing.market_mode }}</dd>
+          </div>
+          <div>
+            <dt>tokenURI</dt>
+            <dd>{{ store.getTokenMetadataUrl(resolvedListing.token_id) }}</dd>
+          </div>
+          <div v-if="resolvedListing.chain?.chain_listing_id">
+            <dt>Chain Listing</dt>
+            <dd>{{ resolvedListing.chain.chain_listing_id }}</dd>
+          </div>
+          <div v-if="resolvedListing.chain?.open_tx_hash">
+            <dt>Open Tx</dt>
+            <dd>{{ resolvedListing.chain.open_tx_hash }}</dd>
+          </div>
+          <div v-if="resolvedListing.chain?.close_tx_hash">
+            <dt>Close Tx</dt>
+            <dd>{{ resolvedListing.chain.close_tx_hash }}</dd>
+          </div>
+        </dl>
       </div>
-      <dl class="detail-list detail-list-two">
-        <div>
-          <dt>Price</dt>
-          <dd>{{ resolvedListing.price }}</dd>
-        </div>
-        <div>
-          <dt>NFT Token</dt>
-          <dd>{{ resolvedListing.token_id }}</dd>
-        </div>
-        <div>
-          <dt>Seller</dt>
-          <dd>{{ store.describeWallet(resolvedListing.seller_wallet_id) }}</dd>
-        </div>
-        <div>
-          <dt>Holder</dt>
-          <dd>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</dd>
-        </div>
-        <div>
-          <dt>Sync Mode</dt>
-          <dd>{{ store.formatSyncMode(agent.nft.sync_mode) }}</dd>
-        </div>
-        <div>
-          <dt>Market Mode</dt>
-          <dd>{{ resolvedListing.market_mode }}</dd>
-        </div>
-        <div>
-          <dt>tokenURI</dt>
-          <dd>{{ store.getTokenMetadataUrl(resolvedListing.token_id) }}</dd>
-        </div>
-        <div v-if="resolvedListing.chain?.chain_listing_id">
-          <dt>Chain Listing</dt>
-          <dd>{{ resolvedListing.chain.chain_listing_id }}</dd>
-        </div>
-        <div v-if="resolvedListing.chain?.open_tx_hash">
-          <dt>Open Tx</dt>
-          <dd>{{ resolvedListing.chain.open_tx_hash }}</dd>
-        </div>
-        <div v-if="resolvedListing.chain?.close_tx_hash">
-          <dt>Close Tx</dt>
-          <dd>{{ resolvedListing.chain.close_tx_hash }}</dd>
-        </div>
-      </dl>
       <div class="action-row">
         <button class="primary-button" type="button" @click="store.buyListing(resolvedListing.id)">
           {{ resolvedListing.market_mode === "ONCHAIN" ? "Buy On-chain Listing" : "Buy Listing" }}
@@ -96,25 +98,31 @@
         </div>
         <span class="panel-chip">{{ store.formatSyncMode(agent.nft.sync_mode) }}</span>
       </header>
-      <dl class="detail-list detail-list-two">
-        <div>
-          <dt>Agent ID</dt>
-          <dd>{{ agent.id }}</dd>
+      <div class="stack-grid">
+        <dl class="detail-list detail-list-two">
+          <div>
+            <dt>Agent ID</dt>
+            <dd>{{ agent.id }}</dd>
+          </div>
+          <div>
+            <dt>Owner Wallet</dt>
+            <dd>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</dd>
+          </div>
+          <div>
+            <dt>Contract</dt>
+            <dd>{{ agent.nft.contract_address || "Local only" }}</dd>
+          </div>
+          <div>
+            <dt>Chain Token</dt>
+            <dd>{{ agent.nft.chain_token_id || "Off-chain only" }}</dd>
+          </div>
+        </dl>
+        <div class="surface-block">
+          <p class="surface-kicker">Prompt</p>
+          <h3 class="surface-title">System prompt</h3>
+          <pre class="code-block compact-code-block">{{ agent.system_prompt }}</pre>
         </div>
-        <div>
-          <dt>Owner Wallet</dt>
-          <dd>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</dd>
-        </div>
-        <div>
-          <dt>Contract</dt>
-          <dd>{{ agent.nft.contract_address || "Local only" }}</dd>
-        </div>
-        <div>
-          <dt>Chain Token</dt>
-          <dd>{{ agent.nft.chain_token_id || "Off-chain only" }}</dd>
-        </div>
-      </dl>
-      <pre class="code-block">{{ agent.system_prompt }}</pre>
+      </div>
     </section>
 
     <section class="panel page-grid-full">
@@ -128,54 +136,60 @@
       <div v-if="detail.loading" class="empty-state">Loading listing timeline...</div>
       <div v-else-if="detail.error" class="empty-state">{{ detail.error }}</div>
       <div v-else class="page-grid page-grid-two">
-        <div class="stack-grid">
-          <article v-for="event in detail.events" :key="event.id" class="entity-card">
-            <div class="entity-card-header">
-              <strong>{{ event.event_type }}</strong>
-              <span class="status-badge">{{ event.block_number || "pending" }}</span>
-            </div>
-            <dl class="detail-list detail-list-two">
-              <div>
-                <dt>Tx Hash</dt>
-                <dd>{{ event.tx_hash }}</dd>
-              </div>
-              <div>
-                <dt>Created</dt>
-                <dd>{{ store.formatDateTime(event.created_at) }}</dd>
-              </div>
-            </dl>
-            <pre class="code-block">{{ JSON.stringify(event.payload, null, 2) }}</pre>
-          </article>
+        <div class="panel-soft stack-grid">
+          <div class="surface-block">
+            <p class="surface-kicker">Events</p>
+            <h3 class="surface-title">Index timeline</h3>
+          </div>
           <div v-if="!detail.events.length" class="empty-state">No listing events have been indexed yet.</div>
+          <div v-else class="data-table">
+            <div class="data-table-head compact-log-table">
+              <span>Event</span>
+              <span>Block</span>
+              <span>Created</span>
+            </div>
+            <template v-for="event in detail.events" :key="event.id">
+              <article class="data-table-row compact-log-table">
+                <div class="table-cell"><strong>{{ event.event_type }}</strong></div>
+                <div class="table-cell"><span class="text-muted">{{ event.block_number || "pending" }}</span></div>
+                <div class="table-cell"><span class="text-muted">{{ store.formatDateTime(event.created_at) }}</span></div>
+              </article>
+              <article class="data-table-row history-table-expanded">
+                <div class="table-cell table-cell-full">
+                  <pre class="code-block compact-code-block">{{ JSON.stringify(event.payload, null, 2) }}</pre>
+                </div>
+              </article>
+            </template>
+          </div>
         </div>
 
-        <div class="stack-grid">
-          <article v-for="tx in detail.transactions" :key="tx.id" class="entity-card">
-            <div class="entity-card-header">
-              <strong>{{ tx.tx_kind }}</strong>
-              <span class="status-badge">{{ tx.status }}</span>
-            </div>
-            <dl class="detail-list detail-list-two">
-              <div>
-                <dt>Tx Hash</dt>
-                <dd>{{ tx.tx_hash }}</dd>
-              </div>
-              <div>
-                <dt>Updated</dt>
-                <dd>{{ store.formatDateTime(tx.updated_at) }}</dd>
-              </div>
-              <div>
-                <dt>From</dt>
-                <dd>{{ tx.from_address || "Unavailable" }}</dd>
-              </div>
-              <div>
-                <dt>To</dt>
-                <dd>{{ tx.to_address || "Unavailable" }}</dd>
-              </div>
-            </dl>
-            <pre class="code-block">{{ JSON.stringify(tx.payload, null, 2) }}</pre>
-          </article>
+        <div class="panel-soft stack-grid">
+          <div class="surface-block">
+            <p class="surface-kicker">Transactions</p>
+            <h3 class="surface-title">Chain settlement</h3>
+          </div>
           <div v-if="!detail.transactions.length" class="empty-state">No on-chain transactions have been indexed for this listing yet.</div>
+          <div v-else class="data-table">
+            <div class="data-table-head tx-table">
+              <span>Kind</span>
+              <span>Status</span>
+              <span>Hash</span>
+              <span>Updated</span>
+            </div>
+            <template v-for="tx in detail.transactions" :key="tx.id">
+              <article class="data-table-row tx-table">
+                <div class="table-cell"><strong>{{ tx.tx_kind }}</strong></div>
+                <div class="table-cell"><span class="status-badge">{{ tx.status }}</span></div>
+                <div class="table-cell"><span class="text-muted">{{ tx.tx_hash }}</span></div>
+                <div class="table-cell"><span class="text-muted">{{ store.formatDateTime(tx.updated_at) }}</span></div>
+              </article>
+              <article class="data-table-row history-table-expanded">
+                <div class="table-cell table-cell-full">
+                  <pre class="code-block compact-code-block">{{ JSON.stringify(tx.payload, null, 2) }}</pre>
+                </div>
+              </article>
+            </template>
+          </div>
         </div>
       </div>
     </section>

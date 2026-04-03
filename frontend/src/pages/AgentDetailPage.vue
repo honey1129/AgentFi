@@ -26,32 +26,39 @@
         </div>
         <span class="panel-chip">{{ store.formatSyncMode(agent.nft.sync_mode) }}</span>
       </header>
-      <dl class="detail-list detail-list-two">
-        <div>
-          <dt>Agent ID</dt>
-          <dd>{{ agent.id }}</dd>
+      <div class="stack-grid">
+        <dl class="detail-list detail-list-two">
+          <div>
+            <dt>Agent ID</dt>
+            <dd>{{ agent.id }}</dd>
+          </div>
+          <div>
+            <dt>NFT Token</dt>
+            <dd>{{ agent.nft.token_id }}</dd>
+          </div>
+          <div>
+            <dt>Owner Wallet</dt>
+            <dd>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</dd>
+          </div>
+          <div>
+            <dt>Chain Token</dt>
+            <dd>{{ agent.nft.chain_token_id || "Off-chain only" }}</dd>
+          </div>
+          <div>
+            <dt>Metadata URI</dt>
+            <dd>{{ agent.nft.metadata_uri || "Unavailable" }}</dd>
+          </div>
+          <div>
+            <dt>Contract</dt>
+            <dd>{{ agent.nft.contract_address || "Local only" }}</dd>
+          </div>
+        </dl>
+        <div class="surface-block">
+          <p class="surface-kicker">Description</p>
+          <h3 class="surface-title">Agent intent</h3>
+          <p class="panel-intro compact-panel-intro">{{ agent.description }}</p>
         </div>
-        <div>
-          <dt>NFT Token</dt>
-          <dd>{{ agent.nft.token_id }}</dd>
-        </div>
-        <div>
-          <dt>Owner Wallet</dt>
-          <dd>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</dd>
-        </div>
-        <div>
-          <dt>Chain Token</dt>
-          <dd>{{ agent.nft.chain_token_id || "Off-chain only" }}</dd>
-        </div>
-        <div>
-          <dt>Metadata URI</dt>
-          <dd>{{ agent.nft.metadata_uri || "Unavailable" }}</dd>
-        </div>
-        <div>
-          <dt>Contract</dt>
-          <dd>{{ agent.nft.contract_address || "Local only" }}</dd>
-        </div>
-      </dl>
+      </div>
       <div class="action-row">
         <button class="ghost-button" type="button" @click="router.push({ path: '/runs/queue', query: { agent_id: agent.id } })">Queue Run</button>
         <button class="ghost-button" type="button" @click="router.push({ path: '/market/listings', query: { token_id: agent.nft.token_id } })">List</button>
@@ -125,37 +132,50 @@
         <span class="panel-chip">{{ detail.runs.length }} runs</span>
       </header>
       <div v-if="!detail.runs.length && !detail.loading" class="empty-state">No runs yet for this agent.</div>
-      <div v-else class="stack-grid">
-        <article v-for="run in detail.runs" :key="run.id" class="entity-card">
-          <div class="entity-card-header">
-            <strong>{{ run.id }}</strong>
-            <div class="action-row">
+      <div v-else class="data-table">
+        <div class="data-table-head history-table">
+          <span>Run</span>
+          <span>Requester</span>
+          <span>Timeline</span>
+          <span>Task</span>
+          <span>Actions</span>
+          <span>Status</span>
+        </div>
+        <template v-for="run in detail.runs" :key="run.id">
+          <article class="data-table-row history-table">
+            <div class="table-cell">
+              <strong>{{ run.id }}</strong>
+            </div>
+            <div class="table-cell">
+              <span class="text-muted">{{ store.describeWallet(run.requested_by_wallet_id) }}</span>
+            </div>
+            <div class="table-cell">
+              <div class="cell-stack">
+                <span class="text-muted">Start {{ store.formatDateTime(run.started_at) }}</span>
+                <span class="text-muted">Finish {{ store.formatDateTime(run.finished_at) }}</span>
+              </div>
+            </div>
+            <div class="table-cell">
+              <span class="text-muted">{{ store.truncate(run.task_input, 120) }}</span>
+            </div>
+            <div class="table-cell">
+              <div class="table-actions">
+                <button class="ghost-button" type="button" @click="toggleRun(run.id)">
+                  {{ expandedRunIds.includes(run.id) ? "Hide Output" : "Show Output" }}
+                </button>
+                <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Run Detail</button>
+              </div>
+            </div>
+            <div class="table-cell">
               <span class="status-badge">{{ run.status }}</span>
-              <button class="ghost-button" type="button" @click="toggleRun(run.id)">
-                {{ expandedRunIds.includes(run.id) ? "Hide Output" : "Show Output" }}
-              </button>
             </div>
-          </div>
-          <dl class="detail-list detail-list-two">
-            <div>
-              <dt>Started</dt>
-              <dd>{{ store.formatDateTime(run.started_at) }}</dd>
+          </article>
+          <article v-if="expandedRunIds.includes(run.id)" class="data-table-row history-table-expanded">
+            <div class="table-cell table-cell-full">
+              <pre class="code-block">{{ store.formatRunOutput(run.output) }}</pre>
             </div>
-            <div>
-              <dt>Finished</dt>
-              <dd>{{ store.formatDateTime(run.finished_at) }}</dd>
-            </div>
-            <div>
-              <dt>Requester</dt>
-              <dd>{{ store.describeWallet(run.requested_by_wallet_id) }}</dd>
-            </div>
-            <div>
-              <dt>Task</dt>
-              <dd>{{ store.truncate(run.task_input, 240) }}</dd>
-            </div>
-          </dl>
-          <pre v-if="expandedRunIds.includes(run.id)" class="code-block">{{ store.formatRunOutput(run.output) }}</pre>
-        </article>
+          </article>
+        </template>
       </div>
     </section>
   </div>

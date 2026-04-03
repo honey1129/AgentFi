@@ -31,48 +31,57 @@
         </div>
         <span class="panel-chip">{{ run.status }}</span>
       </header>
-      <dl class="detail-list detail-list-two">
-        <div>
-          <dt>Agent</dt>
-          <dd>{{ run.agent_id }}</dd>
+      <div class="stack-grid">
+        <dl class="detail-list detail-list-two">
+          <div>
+            <dt>Agent</dt>
+            <dd>{{ run.agent_id }}</dd>
+          </div>
+          <div>
+            <dt>Requester</dt>
+            <dd>{{ store.describeWallet(run.requested_by_wallet_id) }}</dd>
+          </div>
+          <div>
+            <dt>Started</dt>
+            <dd>{{ store.formatDateTime(run.started_at) }}</dd>
+          </div>
+          <div>
+            <dt>Finished</dt>
+            <dd>{{ store.formatDateTime(run.finished_at) }}</dd>
+          </div>
+          <div>
+            <dt>Queued</dt>
+            <dd>{{ store.formatDateTime(run.queued_at) }}</dd>
+          </div>
+          <div>
+            <dt>Next Retry</dt>
+            <dd>{{ store.formatDateTime(run.next_retry_at) }}</dd>
+          </div>
+          <div>
+            <dt>Parent Run</dt>
+            <dd>{{ run.parent_run_id || "Primary run" }}</dd>
+          </div>
+          <div>
+            <dt>Celery Task</dt>
+            <dd>{{ run.celery_task_id || "Pending dispatch" }}</dd>
+          </div>
+          <div>
+            <dt>Cancel Requested</dt>
+            <dd>{{ store.formatDateTime(run.cancel_requested_at) }}</dd>
+          </div>
+          <div>
+            <dt>Dead Lettered</dt>
+            <dd>{{ store.formatDateTime(run.dead_lettered_at) }}</dd>
+          </div>
+        </dl>
+        <div v-if="run.failure_reason" class="surface-block">
+          <p class="surface-kicker">Failure Reason</p>
+          <h3 class="surface-title">{{ run.failure_reason }}</h3>
+          <p class="panel-intro compact-panel-intro">
+            {{ store.isDeadLettered(run) ? "This run is now in dead-letter state and requires manual intervention or a retry." : "The latest failure detail recorded by the runtime." }}
+          </p>
         </div>
-        <div>
-          <dt>Requester</dt>
-          <dd>{{ store.describeWallet(run.requested_by_wallet_id) }}</dd>
-        </div>
-        <div>
-          <dt>Started</dt>
-          <dd>{{ store.formatDateTime(run.started_at) }}</dd>
-        </div>
-        <div>
-          <dt>Finished</dt>
-          <dd>{{ store.formatDateTime(run.finished_at) }}</dd>
-        </div>
-        <div>
-          <dt>Queued</dt>
-          <dd>{{ store.formatDateTime(run.queued_at) }}</dd>
-        </div>
-        <div>
-          <dt>Next Retry</dt>
-          <dd>{{ store.formatDateTime(run.next_retry_at) }}</dd>
-        </div>
-        <div>
-          <dt>Parent Run</dt>
-          <dd>{{ run.parent_run_id || "Primary run" }}</dd>
-        </div>
-        <div>
-          <dt>Celery Task</dt>
-          <dd>{{ run.celery_task_id || "Pending dispatch" }}</dd>
-        </div>
-        <div>
-          <dt>Cancel Requested</dt>
-          <dd>{{ store.formatDateTime(run.cancel_requested_at) }}</dd>
-        </div>
-        <div>
-          <dt>Dead Lettered</dt>
-          <dd>{{ store.formatDateTime(run.dead_lettered_at) }}</dd>
-        </div>
-      </dl>
+      </div>
       <div class="action-row">
         <button
           v-if="!store.isTerminalRun(run)"
@@ -112,13 +121,6 @@
           <h2>Execution Output</h2>
         </div>
       </header>
-      <div v-if="run.failure_reason" class="surface-block">
-        <p class="surface-kicker">Failure Reason</p>
-        <h3 class="surface-title">{{ run.failure_reason }}</h3>
-        <p class="panel-intro">
-          {{ store.isDeadLettered(run) ? "This run is now in dead-letter state and requires manual intervention or a retry." : "The latest failure detail recorded by the runtime." }}
-        </p>
-      </div>
       <pre class="code-block">{{ store.formatRunOutput(run.output) }}</pre>
     </section>
   </div>

@@ -1,10 +1,10 @@
 <template>
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-mark">AF</div>
+      <div class="brand-mark">{{ brandMark }}</div>
       <div class="sidebar-brand-copy">
-        <p class="topbar-kicker">AgentFi Runtime</p>
-        <strong>Control Center</strong>
+        <p class="topbar-kicker">{{ brandKicker }}</p>
+        <strong>{{ brandTitle }}</strong>
       </div>
     </div>
 
@@ -39,6 +39,9 @@
         <strong>{{ operatorSummary }}</strong>
         <p>{{ runtimeSummary }}</p>
       </div>
+      <RouterLink v-if="portalTo && portalLabel" :to="portalTo" class="sidebar-switch-link">
+        {{ portalLabel }}
+      </RouterLink>
     </div>
   </aside>
 </template>
@@ -64,6 +67,26 @@ defineProps({
   runtimeSummary: {
     type: String,
     required: true,
+  },
+  brandMark: {
+    type: String,
+    default: "AF",
+  },
+  brandKicker: {
+    type: String,
+    default: "AgentFi Runtime",
+  },
+  brandTitle: {
+    type: String,
+    default: "Control Center",
+  },
+  portalLabel: {
+    type: String,
+    default: "",
+  },
+  portalTo: {
+    type: String,
+    default: "",
   },
 });
 </script>

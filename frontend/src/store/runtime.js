@@ -1258,6 +1258,7 @@ export function useRuntimeStore() {
     formatRunDuration,
     isTerminalRun,
     isDeadLettered,
+    getRuntimeChainLabel,
     getTokenMetadataUrl,
     getTokenImageUrl,
     copyText,

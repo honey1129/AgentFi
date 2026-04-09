@@ -1,5 +1,201 @@
 <template>
-  <div v-if="resolvedListing && agent" class="page-grid">
+  <div v-if="isUserView && resolvedListing && agent" class="wallet-page-stack">
+    <section class="wallet-page-kpis">
+      <article class="wallet-page-kpi">
+        <span>Ask price</span>
+        <strong>{{ resolvedListing.price }}</strong>
+        <p>The current market ask for token {{ resolvedListing.token_id }}.</p>
+      </article>
+      <article class="wallet-page-kpi">
+        <span>Holder check</span>
+        <strong>{{ holderState }}</strong>
+        <p>{{ resolvedListing.seller_wallet_id === agent.nft.owner_wallet_id ? "Seller and current holder still match." : "Seller and holder have diverged. Review before trading." }}</p>
+      </article>
+      <article class="wallet-page-kpi">
+        <span>Settlement mode</span>
+        <strong>{{ resolvedListing.market_mode }}</strong>
+        <p>{{ agent.nft.contract_address ? `Contract ${agent.nft.contract_address}` : "No on-chain contract is linked to this token yet." }}</p>
+      </article>
+      <article class="wallet-page-kpi">
+        <span>Timeline</span>
+        <strong>{{ detail.events.length }}</strong>
+        <p>{{ detail.transactions.length }} indexed transactions for this listing.</p>
+      </article>
+    </section>
+
+    <section class="wallet-page-grid">
+      <div class="wallet-page-main">
+        <article class="wallet-card">
+          <header class="wallet-card-header">
+            <div>
+              <p class="wallet-card-kicker">Listing</p>
+              <h2>{{ resolvedListing.id }}</h2>
+            </div>
+            <span class="wallet-status-pill" :class="listingTone(resolvedListing.status)">{{ resolvedListing.status }}</span>
+          </header>
+
+          <div class="wallet-detail-hero">
+            <div class="wallet-detail-media">
+              <img :src="store.getTokenImageUrl(resolvedListing.token_id)" :alt="agent.name" />
+            </div>
+
+            <div class="wallet-detail-grid">
+              <div class="wallet-detail-card">
+                <span>Price</span>
+                <strong>{{ resolvedListing.price }}</strong>
+              </div>
+              <div class="wallet-detail-card">
+                <span>Token</span>
+                <strong>{{ resolvedListing.token_id }}</strong>
+              </div>
+              <div class="wallet-detail-card">
+                <span>Seller</span>
+                <strong>{{ store.describeWallet(resolvedListing.seller_wallet_id) }}</strong>
+              </div>
+              <div class="wallet-detail-card">
+                <span>Holder</span>
+                <strong>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="wallet-card-actions">
+            <button class="wallet-home-primary" type="button" @click="store.buyListing(resolvedListing.id)">
+              {{ resolvedListing.market_mode === "ONCHAIN" ? "Buy on-chain listing" : "Buy listing" }}
+            </button>
+            <button
+              v-if="resolvedListing.status === 'OPEN'"
+              class="wallet-home-secondary"
+              type="button"
+              @click="store.cancelListing(resolvedListing.id)"
+            >
+              {{ resolvedListing.market_mode === "ONCHAIN" ? "Cancel on-chain listing" : "Cancel listing" }}
+            </button>
+            <button class="wallet-home-secondary" type="button" @click="router.push(`${routePrefix}/agents/${agent.id}`)">
+              Agent detail
+            </button>
+          </div>
+        </article>
+
+        <article class="wallet-card">
+          <header class="wallet-card-header">
+            <div>
+              <p class="wallet-card-kicker">Linked agent</p>
+              <h2>{{ agent.name }}</h2>
+            </div>
+            <span class="wallet-status-pill">{{ store.formatSyncMode(agent.nft.sync_mode) }}</span>
+          </header>
+
+          <div class="wallet-detail-grid">
+            <div class="wallet-detail-card">
+              <span>Agent ID</span>
+              <strong>{{ agent.id }}</strong>
+            </div>
+            <div class="wallet-detail-card">
+              <span>Chain token</span>
+              <strong>{{ agent.nft.chain_token_id || "Off-chain only" }}</strong>
+            </div>
+            <div class="wallet-detail-card">
+              <span>Sync mode</span>
+              <strong>{{ store.formatSyncMode(agent.nft.sync_mode) }}</strong>
+            </div>
+            <div class="wallet-detail-card">
+              <span>Contract</span>
+              <strong>{{ agent.nft.contract_address || "Local only" }}</strong>
+            </div>
+          </div>
+
+          <pre class="wallet-code-block">{{ agent.system_prompt }}</pre>
+        </article>
+
+        <article class="wallet-card">
+          <header class="wallet-card-header">
+            <div>
+              <p class="wallet-card-kicker">Market timeline</p>
+              <h2>Events & transactions</h2>
+            </div>
+            <span class="wallet-status-pill">{{ detail.events.length }} events</span>
+          </header>
+
+          <div v-if="detail.loading" class="empty-state">Loading listing timeline...</div>
+          <div v-else-if="detail.error" class="empty-state">{{ detail.error }}</div>
+          <div v-else class="wallet-detail-timeline">
+            <div class="wallet-inline-card">
+              <span>Events</span>
+              <strong>{{ detail.events.length }} indexed events</strong>
+              <div v-if="!detail.events.length" class="wallet-side-empty">No listing events have been indexed yet.</div>
+              <div v-else class="wallet-timeline-list">
+                <article v-for="event in detail.events" :key="event.id" class="wallet-timeline-item">
+                  <div class="wallet-timeline-head">
+                    <strong>{{ event.event_type }}</strong>
+                    <span>{{ event.block_number || "pending" }}</span>
+                  </div>
+                  <p>{{ store.formatDateTime(event.created_at) }}</p>
+                  <pre class="wallet-code-block compact">{{ JSON.stringify(event.payload, null, 2) }}</pre>
+                </article>
+              </div>
+            </div>
+
+            <div class="wallet-inline-card">
+              <span>Transactions</span>
+              <strong>{{ detail.transactions.length }} indexed transactions</strong>
+              <div v-if="!detail.transactions.length" class="wallet-side-empty">No on-chain transactions have been indexed for this listing yet.</div>
+              <div v-else class="wallet-timeline-list">
+                <article v-for="tx in detail.transactions" :key="tx.id" class="wallet-timeline-item">
+                  <div class="wallet-timeline-head">
+                    <strong>{{ tx.tx_kind }}</strong>
+                    <span class="wallet-status-pill" :class="listingTone(tx.status)">{{ tx.status }}</span>
+                  </div>
+                  <p>{{ tx.tx_hash }} · {{ store.formatDateTime(tx.updated_at) }}</p>
+                  <pre class="wallet-code-block compact">{{ JSON.stringify(tx.payload, null, 2) }}</pre>
+                </article>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <aside class="wallet-page-side">
+        <article class="wallet-side-card">
+          <div class="wallet-side-title">Settlement posture</div>
+          <div class="wallet-side-list">
+            <div>
+              <strong>Market mode</strong>
+              <span>{{ resolvedListing.market_mode }}</span>
+            </div>
+            <div>
+              <strong>Chain listing</strong>
+              <span>{{ resolvedListing.chain?.chain_listing_id || "Not indexed" }}</span>
+            </div>
+            <div>
+              <strong>Open tx</strong>
+              <span>{{ resolvedListing.chain?.open_tx_hash || "Not recorded" }}</span>
+            </div>
+            <div>
+              <strong>Close tx</strong>
+              <span>{{ resolvedListing.chain?.close_tx_hash || "Not recorded" }}</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="wallet-side-card">
+          <div class="wallet-side-title">Metadata route</div>
+          <div class="wallet-side-list">
+            <div>
+              <strong>tokenURI</strong>
+              <span>{{ store.getTokenMetadataUrl(resolvedListing.token_id) }}</span>
+            </div>
+            <div>
+              <strong>Image</strong>
+              <span>{{ store.getTokenImageUrl(resolvedListing.token_id) }}</span>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </section>
+  </div>
+
+  <div v-else-if="resolvedListing && agent" class="page-grid">
     <section class="metric-strip">
       <article class="metric-card">
         <span>Ask Price</span>
@@ -85,8 +281,15 @@
         >
           {{ resolvedListing.market_mode === "ONCHAIN" ? "Cancel On-chain Listing" : "Cancel Listing" }}
         </button>
-        <button class="ghost-button" type="button" @click="router.push(`/agents/${agent.id}`)">Agent Detail</button>
-        <button class="ghost-button" type="button" @click="router.push(`/wallets/${resolvedListing.seller_wallet_id}`)">Seller Wallet</button>
+        <button class="ghost-button" type="button" @click="router.push(`${routePrefix}/agents/${agent.id}`)">Agent Detail</button>
+        <button
+          v-if="!isUserView"
+          class="ghost-button"
+          type="button"
+          @click="router.push(`/wallets/${resolvedListing.seller_wallet_id}`)"
+        >
+          Seller Wallet
+        </button>
       </div>
     </section>
 
@@ -209,6 +412,8 @@ import { useRuntimeStore } from "@/store/runtime";
 const route = useRoute();
 const router = useRouter();
 const store = useRuntimeStore();
+const isUserView = computed(() => route.meta.audience === "user");
+const routePrefix = computed(() => (isUserView.value ? "/app" : ""));
 
 const detail = reactive({
   loading: false,
@@ -257,4 +462,14 @@ watchEffect(() => {
     store.focusListing(resolvedListing.value.id);
   }
 });
+
+function listingTone(status) {
+  if (status === "OPEN" || status === "RUNNING" || status === "PENDING") {
+    return "is-pending";
+  }
+  if (status === "SOLD" || status === "COMPLETED" || status === "CONFIRMED") {
+    return "is-completed";
+  }
+  return "is-review";
+}
 </script>

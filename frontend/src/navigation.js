@@ -1,4 +1,4 @@
-export const workspaceSections = [
+export const adminSections = [
   {
     section: "runtime",
     label: "Runtime",
@@ -51,5 +51,41 @@ export const workspaceSections = [
       { id: "history", label: "History", to: "/runs/history" },
       { id: "schedules", label: "Schedules", to: "/runs/schedules" },
     ],
+  },
+];
+
+export const userSections = [
+  {
+    section: "home",
+    label: "Home",
+    to: "/app",
+    children: [{ id: "home", label: "Workspace", to: "/app/home" }],
+  },
+  {
+    section: "create",
+    label: "New Agent",
+    to: "/app/create",
+    children: [{ id: "create", label: "New Agent", to: "/app/create" }],
+  },
+  {
+    section: "agents",
+    label: "Portfolio",
+    to: "/app/agents",
+    children: [{ id: "agents", label: "Portfolio", to: "/app/agents" }],
+  },
+  {
+    section: "market",
+    label: "Market",
+    to: "/app/market",
+    children: [
+      { id: "market", label: "Listings", to: "/app/market" },
+      { id: "transfers", label: "Transfers", to: "/app/transfers" },
+    ],
+  },
+  {
+    section: "runs",
+    label: "Runs",
+    to: "/app/runs",
+    children: [{ id: "runs", label: "My Runs", to: "/app/runs" }],
   },
 ];

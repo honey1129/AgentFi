@@ -13,11 +13,150 @@ import RunsHistoryPage from "@/pages/RunsHistoryPage.vue";
 import RunsPage from "@/pages/RunsPage.vue";
 import ScheduleDetailPage from "@/pages/ScheduleDetailPage.vue";
 import RunsSchedulesPage from "@/pages/RunsSchedulesPage.vue";
+import UserAgentsPage from "@/pages/UserAgentsPage.vue";
+import UserHomePage from "@/pages/UserHomePage.vue";
+import UserMarketPage from "@/pages/UserMarketPage.vue";
+import UserRunsPage from "@/pages/UserRunsPage.vue";
+import UserTransfersPage from "@/pages/UserTransfersPage.vue";
 import WalletDetailPage from "@/pages/WalletDetailPage.vue";
 import WalletOperatorPage from "@/pages/WalletOperatorPage.vue";
 import WalletsPage from "@/pages/WalletsPage.vue";
 
 const routes = [
+  {
+    path: "/app",
+    redirect: "/app/home",
+  },
+  {
+    path: "/app/home",
+    name: "user-home",
+    component: UserHomePage,
+    meta: {
+      audience: "user",
+      section: "home",
+      subsection: "home",
+      eyebrow: "Home",
+      title: "Home",
+      headline: "Monitor your portfolio, market positions, and recent runs from one wallet-first home.",
+      description: "Everything here is scoped to the connected wallet and its owned inventory.",
+    },
+  },
+  {
+    path: "/app/session",
+    redirect: "/app/home",
+  },
+  {
+    path: "/app/create",
+    name: "user-create",
+    component: LaunchpadCreatePage,
+    meta: {
+      audience: "user",
+      section: "create",
+      subsection: "create",
+      eyebrow: "Create",
+      title: "New Agent",
+      headline: "Create a new wallet-bound agent in one focused flow.",
+      description: "Ownership NFT binding happens inside this creation flow when runtime minting is enabled.",
+    },
+  },
+  {
+    path: "/app/agents",
+    name: "user-agents",
+    component: UserAgentsPage,
+    meta: {
+      audience: "user",
+      section: "agents",
+      subsection: "agents",
+      eyebrow: "Agents",
+      title: "Agents",
+      headline: "Inspect the agents this wallet actually owns and controls.",
+      description: "A wallet-scoped agent inventory with prompt, token routing, and next actions.",
+    },
+  },
+  {
+    path: "/app/agents/:agentId",
+    name: "user-agent-detail",
+    component: AgentDetailPage,
+    meta: {
+      audience: "user",
+      section: "agents",
+      subsection: "agents",
+      eyebrow: "Agent",
+      title: "Agent Detail",
+      headline: "Review one owned agent across prompt, metadata, and recent activity.",
+      description: "A wallet-centric detail view with ownership and execution context.",
+    },
+  },
+  {
+    path: "/app/market",
+    name: "user-market",
+    component: UserMarketPage,
+    meta: {
+      audience: "user",
+      section: "market",
+      subsection: "market",
+      eyebrow: "Market",
+      title: "Market",
+      headline: "List owned NFTs and acquire agents from the live market.",
+      description: "Sell-side inventory and buy-side opportunities for the current wallet.",
+    },
+  },
+  {
+    path: "/app/transfers",
+    name: "user-transfers",
+    component: UserTransfersPage,
+    meta: {
+      audience: "user",
+      section: "market",
+      subsection: "transfers",
+      eyebrow: "Transfers",
+      title: "Transfers",
+      headline: "Move owned NFTs directly to another address without opening a listing.",
+      description: "A dedicated path for direct ownership handoff.",
+    },
+  },
+  {
+    path: "/app/market/listings/:listingId",
+    name: "user-listing-detail",
+    component: ListingDetailPage,
+    meta: {
+      audience: "user",
+      section: "market",
+      subsection: "market",
+      eyebrow: "Listing",
+      title: "Listing Detail",
+      headline: "Inspect one market listing with agent context, state, and trade actions.",
+      description: "A focused listing page for active buyers and sellers.",
+    },
+  },
+  {
+    path: "/app/runs",
+    name: "user-runs",
+    component: UserRunsPage,
+    meta: {
+      audience: "user",
+      section: "runs",
+      subsection: "runs",
+      eyebrow: "Runs",
+      title: "Runs",
+      headline: "Queue work for your agents and inspect the runs requested by this wallet.",
+      description: "A personal execution lane for the current wallet.",
+    },
+  },
+  {
+    path: "/app/runs/:runId",
+    name: "user-run-detail",
+    component: RunDetailPage,
+    meta: {
+      audience: "user",
+      section: "runs",
+      subsection: "runs",
+      eyebrow: "Run",
+      title: "Run Detail",
+      headline: "Inspect one run, including payload, output, and retry state.",
+      description: "A focused execution artifact for the current wallet.",
+    },
+  },
   {
     path: "/",
     redirect: "/runtime/overview",

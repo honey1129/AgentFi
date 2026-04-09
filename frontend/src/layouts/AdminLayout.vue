@@ -7,6 +7,11 @@
         :active-subsection="activeSubsection"
         :operator-summary="accessSummary"
         :runtime-summary="helperText"
+        :brand-mark="brandMark"
+        :brand-kicker="brandKicker"
+        :brand-title="brandTitle"
+        :portal-label="portalLabel"
+        :portal-to="portalTo"
       />
 
       <main class="admin-main">
@@ -90,6 +95,26 @@ defineProps({
   subnavItems: {
     type: Array,
     required: true,
+  },
+  brandMark: {
+    type: String,
+    default: "AF",
+  },
+  brandKicker: {
+    type: String,
+    default: "AgentFi Runtime",
+  },
+  brandTitle: {
+    type: String,
+    default: "Control Center",
+  },
+  portalLabel: {
+    type: String,
+    default: "",
+  },
+  portalTo: {
+    type: String,
+    default: "",
   },
 });
 </script>

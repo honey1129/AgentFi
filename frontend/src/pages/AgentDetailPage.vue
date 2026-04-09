@@ -1,5 +1,156 @@
 <template>
-  <div v-if="agent" class="page-grid">
+  <div v-if="isUserView && agent" class="wallet-page-stack">
+    <section class="wallet-page-kpis">
+      <article class="wallet-page-kpi">
+        <span>Ownership</span>
+        <strong>{{ store.describeWallet(agent.nft.owner_wallet_id) }}</strong>
+        <p>{{ store.formatSyncMode(agent.nft.sync_mode) }} ownership is currently bound to this wallet.</p>
+      </article>
+      <article class="wallet-page-kpi">
+        <span>Token routing</span>
+        <strong>{{ agent.nft.chain_token_id || agent.nft.token_id }}</strong>
+        <p>{{ agent.nft.contract_address ? `Contract ${agent.nft.contract_address}` : "This NFT is still operating in local-only mode." }}</p>
+      </article>
+      <article class="wallet-page-kpi">
+        <span>Run activity</span>
+        <strong>{{ detail.runs.length }}</strong>
+        <p>{{ detail.runs[0] ? `Latest run status: ${detail.runs[0].status}.` : "No runs have been recorded for this agent yet." }}</p>
+      </article>
+      <article class="wallet-page-kpi">
+        <span>Status</span>
+        <strong>{{ agent.status }}</strong>
+        <p>{{ detail.metadata?.name || "Metadata attached to this ownership token." }}</p>
+      </article>
+    </section>
+
+    <section class="wallet-page-grid">
+      <div class="wallet-page-main">
+        <article class="wallet-card">
+          <header class="wallet-card-header">
+            <div>
+              <p class="wallet-card-kicker">Overview</p>
+              <h2>{{ agent.name }}</h2>
+            </div>
+            <span class="wallet-status-pill">{{ store.formatSyncMode(agent.nft.sync_mode) }}</span>
+          </header>
+
+          <div class="wallet-detail-grid">
+            <div class="wallet-detail-card">
+              <span>Agent ID</span>
+              <strong>{{ agent.id }}</strong>
+            </div>
+            <div class="wallet-detail-card">
+              <span>NFT token</span>
+              <strong>{{ agent.nft.token_id }}</strong>
+            </div>
+            <div class="wallet-detail-card">
+              <span>Chain token</span>
+              <strong>{{ agent.nft.chain_token_id || "Off-chain only" }}</strong>
+            </div>
+            <div class="wallet-detail-card">
+              <span>Contract</span>
+              <strong>{{ agent.nft.contract_address || "Local only" }}</strong>
+            </div>
+          </div>
+
+          <div class="wallet-inline-card">
+            <span>Description</span>
+            <strong>Agent intent</strong>
+            <p>{{ agent.description }}</p>
+          </div>
+
+          <div class="wallet-card-actions">
+            <button class="wallet-home-secondary" type="button" @click="router.push({ path: '/app/runs', query: { agent_id: agent.id } })">Queue run</button>
+            <button class="wallet-home-secondary" type="button" @click="router.push({ path: '/app/market', query: { token_id: agent.nft.token_id } })">List</button>
+            <button class="wallet-home-secondary" type="button" @click="router.push({ path: '/app/transfers', query: { token_id: agent.nft.token_id } })">Transfer</button>
+          </div>
+        </article>
+
+        <article class="wallet-card">
+          <header class="wallet-card-header">
+            <div>
+              <p class="wallet-card-kicker">Prompt</p>
+              <h2>System prompt</h2>
+            </div>
+          </header>
+          <pre class="wallet-code-block">{{ agent.system_prompt }}</pre>
+        </article>
+
+        <article class="wallet-card">
+          <header class="wallet-card-header">
+            <div>
+              <p class="wallet-card-kicker">History</p>
+              <h2>Run history</h2>
+            </div>
+            <span class="wallet-status-pill">{{ detail.runs.length }} runs</span>
+          </header>
+
+          <div class="wallet-home-table-shell">
+            <div class="wallet-home-table-head wallet-detail-run-table">
+              <div>Run</div>
+              <div>Timeline</div>
+              <div>Task</div>
+              <div>Status</div>
+              <div>Actions</div>
+            </div>
+
+            <template v-for="run in detail.runs" :key="run.id">
+              <div class="wallet-home-table-row wallet-detail-run-table">
+                <div>
+                  <strong>{{ run.id }}</strong>
+                  <span>{{ store.describeWallet(run.requested_by_wallet_id) }}</span>
+                </div>
+                <div>{{ store.formatDateTime(run.queued_at) }}</div>
+                <div>{{ store.truncate(run.task_input, 96) }}</div>
+                <div><span class="wallet-status-pill" :class="runTone(run.status)">{{ run.status }}</span></div>
+                <div class="wallet-home-inline-meta">
+                  <button class="wallet-table-button" type="button" @click="toggleRun(run.id)">
+                    {{ expandedRunIds.includes(run.id) ? "Hide" : "Output" }}
+                  </button>
+                  <RouterLink :to="`/app/runs/${run.id}`">Detail</RouterLink>
+                </div>
+              </div>
+              <div v-if="expandedRunIds.includes(run.id)" class="wallet-output-shell">
+                <pre class="wallet-code-block">{{ store.formatRunOutput(run.output) }}</pre>
+              </div>
+            </template>
+
+            <div v-if="!detail.runs.length && !detail.loading" class="empty-state">No runs yet for this agent.</div>
+          </div>
+        </article>
+      </div>
+
+      <aside class="wallet-page-side">
+        <article class="wallet-side-card">
+          <div class="wallet-side-title">Token metadata</div>
+          <div v-if="detail.loading" class="wallet-side-empty">Loading metadata...</div>
+          <div v-else-if="detail.error" class="wallet-side-empty">{{ detail.error }}</div>
+          <template v-else>
+            <div class="wallet-detail-media">
+              <img :src="detail.metadata?.image || store.getTokenImageUrl(agent.nft.token_id)" :alt="detail.metadata?.name || agent.name" />
+            </div>
+            <div class="wallet-side-list">
+              <div>
+                <strong>{{ detail.metadata?.name || "Token metadata" }}</strong>
+                <span>{{ detail.metadata?.description || agent.description }}</span>
+              </div>
+              <div>
+                <strong>tokenURI</strong>
+                <span>{{ agent.nft.metadata_uri || detail.metadata?.external_url || "Unavailable" }}</span>
+              </div>
+              <div>
+                <strong>External URL</strong>
+                <span>{{ detail.metadata?.external_url || "Unavailable" }}</span>
+              </div>
+            </div>
+            <button class="wallet-home-secondary wide" type="button" @click="copyTokenUri">Copy tokenURI</button>
+          </template>
+        </article>
+      </aside>
+    </section>
+  </div>
+
+  <div v-else-if="agent" class="page-grid">
     <section class="metric-strip">
       <article class="metric-card">
         <span>Ownership</span>
@@ -60,9 +211,9 @@
         </div>
       </div>
       <div class="action-row">
-        <button class="ghost-button" type="button" @click="router.push({ path: '/runs/queue', query: { agent_id: agent.id } })">Queue Run</button>
-        <button class="ghost-button" type="button" @click="router.push({ path: '/market/listings', query: { token_id: agent.nft.token_id } })">List</button>
-        <button class="ghost-button" type="button" @click="router.push({ path: '/market/transfers', query: { token_id: agent.nft.token_id } })">Transfer</button>
+        <button class="ghost-button" type="button" @click="router.push({ path: isUserView ? '/app/runs' : '/runs/queue', query: { agent_id: agent.id } })">Queue Run</button>
+        <button class="ghost-button" type="button" @click="router.push({ path: isUserView ? '/app/market' : '/market/listings', query: { token_id: agent.nft.token_id } })">List</button>
+        <button class="ghost-button" type="button" @click="router.push({ path: isUserView ? '/app/transfers' : '/market/transfers', query: { token_id: agent.nft.token_id } })">Transfer</button>
       </div>
     </section>
 
@@ -163,7 +314,7 @@
                 <button class="ghost-button" type="button" @click="toggleRun(run.id)">
                   {{ expandedRunIds.includes(run.id) ? "Hide Output" : "Show Output" }}
                 </button>
-                <button class="ghost-button" type="button" @click="router.push(`/runs/history/${run.id}`)">Run Detail</button>
+                <button class="ghost-button" type="button" @click="router.push(`${routePrefix}/runs${isUserView ? '' : '/history'}/${run.id}`)">Run Detail</button>
               </div>
             </div>
             <div class="table-cell">
@@ -194,6 +345,8 @@ import { useRuntimeStore } from "@/store/runtime";
 const route = useRoute();
 const router = useRouter();
 const store = useRuntimeStore();
+const isUserView = computed(() => route.meta.audience === "user");
+const routePrefix = computed(() => (isUserView.value ? "/app" : ""));
 
 const detail = reactive({
   loading: false,
@@ -248,5 +401,15 @@ async function copyTokenUri() {
   const tokenUri = agent.value?.nft.metadata_uri || detail.metadata?.external_url || "";
   await store.copyText(tokenUri);
   store.showFlash("tokenURI copied.", "success");
+}
+
+function runTone(status) {
+  if (status === "COMPLETED") {
+    return "is-completed";
+  }
+  if (status === "RUNNING" || status === "QUEUED") {
+    return "is-pending";
+  }
+  return "is-review";
 }
 </script>
